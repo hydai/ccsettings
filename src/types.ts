@@ -19,3 +19,25 @@ export type DiscoveredProject = {
   last_active_unix_millis: number | null;
   transcript_count: number;
 };
+
+export type LayerKind =
+  | "managed"
+  | "user"
+  | "user-local"
+  | "project"
+  | "project-local";
+
+export type Contributor = {
+  layer: LayerKind;
+  /** Any JSON value the layer contributed at this path. */
+  value: unknown;
+  /** True when a later-precedence layer superseded this value. */
+  overridden: boolean;
+};
+
+export type MergedView = {
+  /** The effective merged JSON value. */
+  value: unknown;
+  /** Map from JSON Pointer → precedence-ordered stack of contributions. */
+  origins: Record<string, Contributor[]>;
+};
