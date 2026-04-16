@@ -12,6 +12,7 @@ import type { LayerKind, Workspace } from "../types";
 import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
+import { Card, HelpNote, Input, SectionLabel } from "./ui";
 
 /** Fields the editor can set. `null` means "not set at this tier". */
 type TierScalars = {
@@ -163,11 +164,18 @@ export function ModelEditor({ workspace }: Props) {
         name="model-tier"
       />
 
-      {loading && <p className="text-sm text-muted">Loading tier…</p>}
+      {loading && (
+        <p className="font-body text-sm text-muted">Loading tier…</p>
+      )}
       {layerFile?.parse_error && (
-        <div className="border border-red-500/30 bg-red-500/5 rounded p-3 text-sm text-red-500">
-          This tier's file could not be parsed: {layerFile.parse_error}.
-        </div>
+        <Card
+          variant="soft"
+          className="border-l-[3px] border-danger-soft p-4"
+        >
+          <p className="font-body text-sm text-danger-soft">
+            This tier&apos;s file could not be parsed: {layerFile.parse_error}.
+          </p>
+        </Card>
       )}
 
       {!loading && !layerFile?.parse_error && (
@@ -251,17 +259,17 @@ function FieldShell({
   canClear: boolean;
 }) {
   return (
-    <section className="p-3 border border-default rounded surface">
-      <div className="flex items-baseline justify-between mb-1">
-        <label className="text-sm font-mono">{label}</label>
+    <Card variant="soft" className="p-5 space-y-2.5">
+      <div className="flex items-baseline justify-between">
+        <SectionLabel>{label}</SectionLabel>
         <button
           type="button"
           onClick={onClear}
           disabled={!canClear}
           className={cn(
-            "text-xs",
+            "font-body text-xs rounded-full px-2 py-0.5 transition-colors",
             canClear
-              ? "text-muted hover:text-current"
+              ? "text-muted hover:text-ink hover:bg-canvas"
               : "text-muted/40 cursor-not-allowed",
           )}
           title={
@@ -273,11 +281,9 @@ function FieldShell({
           clear
         </button>
       </div>
-      {description && (
-        <p className="text-xs text-muted mb-2">{description}</p>
-      )}
+      {description && <HelpNote>{description}</HelpNote>}
       {children}
-    </section>
+    </Card>
   );
 }
 
@@ -302,13 +308,15 @@ function StringField({
       canClear={value !== null}
       onClear={() => onChange(null)}
     >
-      <input
+      <Input
         type="text"
         value={value ?? ""}
-        onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+        onChange={(e) =>
+          onChange(e.target.value === "" ? null : e.target.value)
+        }
         placeholder="(inherit)"
         list={suggestions ? listId : undefined}
-        className="w-full bg-transparent border border-default rounded px-3 py-1.5 text-sm font-mono"
+        className="font-mono"
       />
       {suggestions && (
         <datalist id={listId}>
@@ -346,7 +354,11 @@ function SelectField<T extends string>({
         onChange={(e) =>
           onChange(e.target.value === "" ? null : (e.target.value as T))
         }
-        className="w-full bg-transparent border border-default rounded px-3 py-1.5 text-sm font-mono"
+        className={cn(
+          "w-full bg-card border border-hairline rounded-soft-sm px-4 py-3.5",
+          "font-mono text-sm text-ink",
+          "focus:outline-none focus:border-[1.5px] focus:border-ink focus:shadow-focus-ink",
+        )}
       >
         <option value="">(inherit)</option>
         {choices.map((c) => (
@@ -382,22 +394,26 @@ function BoolField({
       canClear={value !== null}
       onClear={() => onChange(null)}
     >
-      <div className="flex gap-1">
-        {options.map((o) => (
-          <button
-            key={o.label}
-            type="button"
-            onClick={() => onChange(o.value)}
-            className={cn(
-              "px-3 py-1.5 rounded text-sm border border-default flex-1",
-              value === o.value
-                ? "bg-black/10 dark:bg-white/10"
-                : "hover:bg-black/5 dark:hover:bg-white/5",
-            )}
-          >
-            {o.label}
-          </button>
-        ))}
+      <div className="flex gap-2">
+        {options.map((o) => {
+          const selected = value === o.value;
+          return (
+            <button
+              key={o.label}
+              type="button"
+              onClick={() => onChange(o.value)}
+              className={cn(
+                "flex-1 rounded-full font-sans text-sm font-medium px-4 py-2.5 transition-colors",
+                "focus:outline-none focus-visible:shadow-focus-ink",
+                selected
+                  ? "bg-ink text-card shadow-lift font-semibold"
+                  : "bg-card border border-hairline text-ink hover:bg-canvas",
+              )}
+            >
+              {o.label}
+            </button>
+          );
+        })}
       </div>
     </FieldShell>
   );

@@ -4,6 +4,7 @@ import { cn } from "../lib/cn";
 import type { Workspace } from "../types";
 import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
+import { Card, HelpNote, Textarea } from "./ui";
 
 type Scope = "user" | "project";
 type Kind = "claude" | "agents" | "gemini";
@@ -117,76 +118,67 @@ export function MemoryEditor({ workspace }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-4 p-3 border border-default rounded surface">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted">Scope:</span>
-          {SCOPES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setScope(s.id)}
-              className={cn(
-                "px-2 py-1 rounded text-sm",
-                scope === s.id
-                  ? "bg-black/10 dark:bg-white/10"
-                  : "hover:bg-black/5 dark:hover:bg-white/5",
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted">File:</span>
-          {KINDS.map((k) => (
-            <button
-              key={k.id}
-              type="button"
-              onClick={() => setKind(k.id)}
-              className={cn(
-                "px-2 py-1 rounded text-sm font-mono",
-                kind === k.id
-                  ? "bg-black/10 dark:bg-white/10"
-                  : "hover:bg-black/5 dark:hover:bg-white/5",
-              )}
-            >
-              {k.label}
-            </button>
-          ))}
+    <div className="space-y-6">
+      <Card variant="cream" className="p-5 space-y-3">
+        <div className="flex flex-wrap items-center gap-4">
+          <PillGroup
+            label="Scope"
+            value={scope}
+            options={SCOPES.map((s) => ({ value: s.id, label: s.label }))}
+            onChange={(v) => setScope(v)}
+          />
+          <PillGroup
+            label="File"
+            value={kind}
+            options={KINDS.map((k) => ({
+              value: k.id,
+              label: k.label,
+              mono: true,
+            }))}
+            onChange={(v) => setKind(v)}
+          />
         </div>
         {file && (
-          <span
-            className="text-xs text-muted font-mono truncate ml-auto self-center"
+          <p
+            className="font-mono text-[11px] text-muted truncate"
             title={file.path}
           >
             {file.path}
-          </span>
+          </p>
         )}
-      </div>
+      </Card>
 
-      <p className="text-xs text-muted leading-snug p-3 border border-default rounded surface">
-        Claude Code loads these markdown files into its context every turn
-        for this scope. Use them for durable instructions, repo conventions,
-        or project-specific glossary — things you'd otherwise paste into
-        every prompt.{" "}
-        <code className="font-mono">CLAUDE.md</code> is the primary file;{" "}
-        <code className="font-mono">AGENTS.md</code> /{" "}
-        <code className="font-mono">GEMINI.md</code> are cross-tool
-        equivalents for compatibility with other assistants.
-      </p>
+      <Card variant="cream" className="p-5">
+        <HelpNote>
+          Claude Code loads these markdown files into its context every turn
+          for this scope. Use them for durable instructions, repo conventions,
+          or project-specific glossary — things you&apos;d otherwise paste into
+          every prompt. <code className="font-mono">CLAUDE.md</code> is the
+          primary file;{" "}
+          <code className="font-mono">AGENTS.md</code> /{" "}
+          <code className="font-mono">GEMINI.md</code> are cross-tool
+          equivalents for compatibility with other assistants.
+        </HelpNote>
+      </Card>
 
-      {loading && <p className="text-sm text-muted">Loading file…</p>}
+      {loading && (
+        <p className="font-body text-sm text-muted">Loading file…</p>
+      )}
       {!loading && file && !file.exists && (
-        <div className="text-sm text-muted border border-dashed border-default rounded p-3">
-          This file does not exist yet. Saving will create it at{" "}
-          <span className="font-mono">{file.path}</span>.
-        </div>
+        <Card
+          variant="soft"
+          className="border-l-[3px] border-accent p-4"
+        >
+          <p className="font-body text-sm text-body">
+            This file does not exist yet. Saving will create it at{" "}
+            <span className="font-mono text-ink">{file.path}</span>.
+          </p>
+        </Card>
       )}
 
       {!loading && (
         <>
-          <textarea
+          <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={
@@ -195,7 +187,7 @@ export function MemoryEditor({ workspace }: Props) {
                 : "# Project memory\n\nWrite instructions Claude Code should always see for this scope."
             }
             spellCheck={false}
-            className="w-full min-h-[40vh] bg-transparent border border-default rounded p-3 text-sm font-mono resize-y"
+            className="min-h-[40vh] font-mono resize-y"
           />
 
           <SaveControls
@@ -224,6 +216,46 @@ export function MemoryEditor({ workspace }: Props) {
           />
         </>
       )}
+    </div>
+  );
+}
+
+function PillGroup<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string; mono?: boolean }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-body text-xs text-muted">{label}:</span>
+      <div className="flex gap-1.5">
+        {options.map((o) => {
+          const selected = value === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onChange(o.value)}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-xs transition-colors",
+                "focus:outline-none focus-visible:shadow-focus-ink",
+                o.mono ? "font-mono" : "font-sans",
+                selected
+                  ? "bg-ink text-card font-semibold"
+                  : "bg-card border border-hairline text-ink font-medium hover:bg-canvas",
+              )}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

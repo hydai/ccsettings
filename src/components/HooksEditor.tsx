@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { AlertTriangle, Plus } from "lucide-react";
+import { AlertTriangle, Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { cn } from "../lib/cn";
 import { TIER_LABEL } from "../lib/layers";
 import { useCascade } from "../state/cascade";
 import {
@@ -13,6 +12,7 @@ import type { LayerKind, Workspace } from "../types";
 import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
+import { Button, Card, HelpNote, Input, SectionLabel, Textarea } from "./ui";
 
 const KNOWN_EVENTS = [
   "PreToolUse",
@@ -28,12 +28,18 @@ const KNOWN_EVENTS = [
 
 /** Patterns that warrant a visible warning — not a block. */
 const DANGER_PATTERNS: { pattern: RegExp; label: string }[] = [
-  { pattern: /\brm\s+(-[a-zA-Z]*[rRf][a-zA-Z]*|--recursive|--force)/, label: "recursive/force rm" },
+  {
+    pattern: /\brm\s+(-[a-zA-Z]*[rRf][a-zA-Z]*|--recursive|--force)/,
+    label: "recursive/force rm",
+  },
   { pattern: /curl[^|]*\|\s*(sh|bash|zsh)\b/i, label: "curl piped to shell" },
   { pattern: /wget[^|]*\|\s*(sh|bash|zsh)\b/i, label: "wget piped to shell" },
   { pattern: /\bsudo\b/, label: "sudo" },
   { pattern: /:\s*\(\s*\)\s*{.*};\s*:/, label: "fork bomb-like pattern" },
-  { pattern: /\bmkfs\b|\bdd\s+if=|\bshred\b/, label: "filesystem-destructive command" },
+  {
+    pattern: /\bmkfs\b|\bdd\s+if=|\bshred\b/,
+    label: "filesystem-destructive command",
+  },
 ];
 
 type Hook = {
@@ -72,15 +78,17 @@ function hooksFromLayer(layer: LayerFile | null): Hook[] {
   return out;
 }
 
-/** Group flat hooks back into the nested settings shape, preserving the row
+/** Group flat hooks back into the nested settings shape, preserving row
  *  order within each (event, matcher) pair. */
 function buildNewValue(original: LayerFile | null, rows: Hook[]): unknown {
   const base = {
     ...((original?.content as Record<string, unknown>) ?? {}),
   };
 
-  const byEvent: Record<string, Array<{ matcher: string; commands: string[] }>> =
-    {};
+  const byEvent: Record<
+    string,
+    Array<{ matcher: string; commands: string[] }>
+  > = {};
   for (const row of rows) {
     const event = row.event.trim();
     if (!event) continue;
@@ -194,7 +202,7 @@ export function HooksEditor({ workspace }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <TierPicker
         value={target}
         onChange={setTarget}
@@ -202,23 +210,30 @@ export function HooksEditor({ workspace }: Props) {
         name="hooks-tier"
       />
 
-      {loading && <p className="text-sm text-muted">Loading tier…</p>}
+      {loading && (
+        <p className="font-body text-sm text-muted">Loading tier…</p>
+      )}
       {layerFile?.parse_error && (
-        <div className="border border-red-500/30 bg-red-500/5 rounded p-3 text-sm text-red-500">
-          This tier's file could not be parsed: {layerFile.parse_error}.
-        </div>
+        <Card
+          variant="soft"
+          className="border-l-[3px] border-danger-soft p-4"
+        >
+          <p className="font-body text-sm text-danger-soft">
+            This tier&apos;s file could not be parsed: {layerFile.parse_error}.
+          </p>
+        </Card>
       )}
 
       {!loading && !layerFile?.parse_error && (
         <>
-          <div className="text-xs text-muted space-y-1 p-3 border border-default rounded surface leading-snug">
-            <p>
-              Hooks run when Claude Code hits a matching event. Commands at
-              the same <code className="font-mono">event</code>+
+          <Card variant="cream" className="p-5 space-y-2">
+            <HelpNote>
+              Hooks run when Claude Code hits a matching event. Commands at the
+              same <code className="font-mono">event</code>+
               <code className="font-mono">matcher</code> are grouped on save.
-            </p>
-            <p>
-              <strong>Events:</strong>{" "}
+            </HelpNote>
+            <HelpNote>
+              <strong className="font-semibold text-ink">Events:</strong>{" "}
               <code className="font-mono">PreToolUse</code> (before any tool
               call, can block),{" "}
               <code className="font-mono">PostToolUse</code> (after),{" "}
@@ -229,51 +244,59 @@ export function HooksEditor({ workspace }: Props) {
               <code className="font-mono">SessionEnd</code>,{" "}
               <code className="font-mono">Notification</code>,{" "}
               <code className="font-mono">PreCompact</code>.
-            </p>
-            <p>
-              <strong>Matcher:</strong> tool name pattern, e.g.{" "}
-              <code className="font-mono">Bash</code>,{" "}
+            </HelpNote>
+            <HelpNote>
+              <strong className="font-semibold text-ink">Matcher:</strong>{" "}
+              tool name pattern, e.g. <code className="font-mono">Bash</code>,{" "}
               <code className="font-mono">Write|Edit</code>, or empty to match
               all tools.
-            </p>
-            <p>
-              <strong>Command:</strong> runs in <code className="font-mono">sh</code>.
-              During <code className="font-mono">PreToolUse</code>/
+            </HelpNote>
+            <HelpNote>
+              <strong className="font-semibold text-ink">Command:</strong>{" "}
+              runs in <code className="font-mono">sh</code>. During{" "}
+              <code className="font-mono">PreToolUse</code>/
               <code className="font-mono">PostToolUse</code>,{" "}
-              <code className="font-mono">$TOOL_INPUT</code> holds the tool's
-              JSON payload; a non-zero exit on{" "}
+              <code className="font-mono">$TOOL_INPUT</code> holds the
+              tool&apos;s JSON payload; a non-zero exit on{" "}
               <code className="font-mono">PreToolUse</code> blocks the call.
-            </p>
-          </div>
+            </HelpNote>
+          </Card>
 
-          {rows.length === 0 ? (
-            <div className="text-xs text-muted italic px-3 py-2 border border-dashed border-default rounded">
-              no hooks at this tier
+          <section>
+            <div className="flex items-baseline justify-between mb-2">
+              <SectionLabel>Hooks</SectionLabel>
+              <span className="font-body text-xs text-muted">{rows.length}</span>
             </div>
-          ) : (
-            <ul className="space-y-2">
-              {rows.map((row) => (
-                <HookRow
-                  key={row.id}
-                  hook={row}
-                  onChange={(key, value) => updateRow(row.id, key, value)}
-                  onRemove={() => removeRow(row.id)}
-                />
-              ))}
-            </ul>
-          )}
-
-          <button
-            type="button"
-            onClick={addRow}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded text-sm border border-dashed border-default",
-              "hover:bg-black/5 dark:hover:bg-white/5",
+            {rows.length === 0 ? (
+              <Card variant="soft" className="p-4 text-center">
+                <span className="font-body text-xs text-muted italic">
+                  no hooks at this tier
+                </span>
+              </Card>
+            ) : (
+              <ul className="space-y-3">
+                {rows.map((row) => (
+                  <HookRow
+                    key={row.id}
+                    hook={row}
+                    onChange={(key, value) => updateRow(row.id, key, value)}
+                    onRemove={() => removeRow(row.id)}
+                  />
+                ))}
+              </ul>
             )}
-          >
-            <Plus className="w-4 h-4" />
-            Add hook
-          </button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={addRow}
+              className="mt-3"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add hook
+            </Button>
+          </section>
 
           <SaveControls
             dirty={dirty}
@@ -322,54 +345,56 @@ function HookRow({
 }) {
   const flags = dangerFlags(hook.command);
   return (
-    <li className="p-3 border border-default rounded surface">
-      <div className="flex gap-2 mb-2">
-        <input
-          type="text"
-          list="hook-events"
-          value={hook.event}
-          onChange={(e) => onChange("event", e.target.value)}
-          placeholder="PreToolUse"
-          className="w-40 bg-transparent border border-default rounded px-2 py-1 text-sm font-mono"
-        />
-        <datalist id="hook-events">
-          {KNOWN_EVENTS.map((e) => (
-            <option key={e} value={e} />
-          ))}
-        </datalist>
-        <input
-          type="text"
-          value={hook.matcher}
-          onChange={(e) => onChange("matcher", e.target.value)}
-          placeholder="matcher (e.g. Bash, Write|Edit)"
-          className="flex-1 bg-transparent border border-default rounded px-2 py-1 text-sm font-mono"
-        />
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label="Remove hook"
-          className="w-8 h-8 flex items-center justify-center rounded hover:bg-red-500/10 text-muted hover:text-red-500"
-        >
-          ×
-        </button>
-      </div>
-      <textarea
-        value={hook.command}
-        onChange={(e) => onChange("command", e.target.value)}
-        placeholder='shell command, e.g.  if echo "$TOOL_INPUT" | grep -q "rm -rf"; then ...'
-        spellCheck={false}
-        rows={Math.min(8, Math.max(2, hook.command.split("\n").length))}
-        className="w-full bg-transparent border border-default rounded px-2 py-1 text-sm font-mono resize-y"
-      />
-      {flags.length > 0 && (
-        <div className="flex items-start gap-2 mt-2 text-xs text-amber-600 dark:text-amber-400">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-medium">Heads up:</span> command contains{" "}
-            {flags.join(", ")}. Make sure this is intentional.
-          </div>
+    <li>
+      <Card variant="soft" className="p-4 space-y-3">
+        <div className="flex gap-2">
+          <Input
+            type="text"
+            list="hook-events"
+            value={hook.event}
+            onChange={(e) => onChange("event", e.target.value)}
+            placeholder="PreToolUse"
+            className="w-40 font-mono !py-2.5"
+          />
+          <datalist id="hook-events">
+            {KNOWN_EVENTS.map((e) => (
+              <option key={e} value={e} />
+            ))}
+          </datalist>
+          <Input
+            type="text"
+            value={hook.matcher}
+            onChange={(e) => onChange("matcher", e.target.value)}
+            placeholder="matcher (e.g. Bash, Write|Edit)"
+            className="flex-1 font-mono !py-2.5"
+          />
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label="Remove hook"
+            className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full text-muted hover:bg-danger-soft/10 hover:text-danger-soft transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-      )}
+        <Textarea
+          value={hook.command}
+          onChange={(e) => onChange("command", e.target.value)}
+          placeholder='shell command, e.g.  if echo "$TOOL_INPUT" | grep -q "rm -rf"; then ...'
+          spellCheck={false}
+          rows={Math.min(8, Math.max(2, hook.command.split("\n").length))}
+          className="font-mono resize-y"
+        />
+        {flags.length > 0 && (
+          <div className="flex items-start gap-2 rounded-soft-sm bg-amber-500/10 border border-amber-500/40 px-3 py-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
+            <p className="font-body text-xs text-body leading-[1.5]">
+              <span className="font-semibold text-ink">Heads up:</span> command
+              contains {flags.join(", ")}. Make sure this is intentional.
+            </p>
+          </div>
+        )}
+      </Card>
     </li>
   );
 }
