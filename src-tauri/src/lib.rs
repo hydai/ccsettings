@@ -25,6 +25,8 @@ pub fn run() {
             commands::rename_workspace,
             commands::discover_workspaces_from_history,
             commands::get_cascade,
+            commands::get_layer_content,
+            commands::save_layer,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

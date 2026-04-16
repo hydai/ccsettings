@@ -8,10 +8,12 @@
 use crate::appconfig::{self, AppConfig, Workspace};
 use crate::cascade::{self, MergedView};
 use crate::discovery::{self, DiscoveredProject};
-use crate::layers::{self, Layer, LayerKind};
+use crate::layers::{self, Layer, LayerContent, LayerKind};
 use crate::paths::{self, WorkspacePaths};
-use serde::Serialize;
-use std::path::PathBuf;
+use crate::writers;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
 use tauri::State;
@@ -166,6 +168,154 @@ pub fn get_cascade(state: State<'_, AppState>, workspace_id: String) -> Result<M
     Ok(cascade::merge(&layers))
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct LayerFileDto {
+    pub layer: LayerKind,
+    pub path: String,
+    pub exists: bool,
+    /// Parsed JSON content when the file exists and parsed cleanly.
+    pub content: Option<Value>,
+    /// Parse error message when the file exists but is malformed.
+    pub parse_error: Option<String>,
+    /// Hex-encoded SHA-256 of the current on-disk bytes, or null if absent.
+    pub hash: Option<String>,
+}
+
+impl LayerFileDto {
+    fn from_layer(l: &Layer) -> Self {
+        let (exists, content, parse_error) = match &l.content {
+            LayerContent::Absent => (false, None, None),
+            LayerContent::Parsed(v) => (true, Some(v.clone()), None),
+            LayerContent::ParseError(m) => (true, None, Some(m.clone())),
+        };
+        Self {
+            layer: l.kind,
+            path: paths::display_path(&l.file),
+            exists,
+            content,
+            parse_error,
+            hash: l.hash.as_ref().map(|h| to_hex(h)),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveLayerArgs {
+    pub workspace_id: String,
+    pub layer: LayerKind,
+    pub new_value: Value,
+    /// Hex-encoded SHA-256 of the file content at the time of edit-start.
+    /// `None` means "file did not exist when we started; create it now".
+    pub expected_hash: Option<String>,
+}
+
+/// Read a single settings tier for a workspace. Absent files return exists=false;
+/// malformed files return exists=true with parse_error set.
+#[tauri::command]
+pub fn get_layer_content(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    layer: LayerKind,
+) -> Result<LayerFileDto, String> {
+    let workspace_path = {
+        let cfg = state.config.lock().expect("config mutex poisoned");
+        cfg.workspace(&workspace_id)
+            .ok_or_else(|| format!("unknown workspace id: {workspace_id}"))?
+            .path
+            .clone()
+    };
+    let path = resolve_layer_path(&workspace_path, layer)?;
+    let l = layers::load_layer(layer, path).map_err(|e| e.to_string())?;
+    Ok(LayerFileDto::from_layer(&l))
+}
+
+/// Atomically save a layer's JSON content with a SHA-256 precondition.
+/// Returns the fresh LayerFileDto reflecting the new on-disk state. A
+/// HashMismatch is reported to the frontend as a distinguishable error
+/// string beginning with "conflict:" so the UI can branch into a diff
+/// modal; all other errors return their Display form.
+#[tauri::command]
+pub fn save_layer(state: State<'_, AppState>, args: SaveLayerArgs) -> Result<LayerFileDto, String> {
+    let workspace_path = {
+        let cfg = state.config.lock().expect("config mutex poisoned");
+        cfg.workspace(&args.workspace_id)
+            .ok_or_else(|| format!("unknown workspace id: {}", args.workspace_id))?
+            .path
+            .clone()
+    };
+    let path = resolve_layer_path(&workspace_path, args.layer)?;
+
+    let expected = match args.expected_hash.as_deref() {
+        None => None,
+        Some(hex) => Some(
+            from_hex(hex)
+                .ok_or_else(|| format!("invalid expected_hash (not 64 hex chars): {hex}"))?,
+        ),
+    };
+
+    let mut bytes = serde_json::to_vec_pretty(&args.new_value)
+        .map_err(|e| format!("serialize new_value: {e}"))?;
+    bytes.push(b'\n');
+
+    match writers::atomic_write_if(&path, &bytes, expected) {
+        Ok(_) => {
+            let reloaded = layers::load_layer(args.layer, path).map_err(|e| e.to_string())?;
+            Ok(LayerFileDto::from_layer(&reloaded))
+        }
+        Err(writers::WriterError::HashMismatch { .. }) => Err(format!(
+            "conflict: {path} changed since edit started",
+            path = path.display()
+        )),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Resolve the absolute path of the given settings tier for a workspace.
+/// Managed tier returns the platform default or an error on unsupported OS.
+fn resolve_layer_path(project_root: &Path, layer: LayerKind) -> Result<PathBuf, String> {
+    let ws = WorkspacePaths::new(project_root.to_path_buf()).map_err(|e| e.to_string())?;
+    Ok(match layer {
+        LayerKind::Managed => paths::managed_settings_default_path()
+            .ok_or_else(|| "managed-settings path is not defined on this platform".to_string())?,
+        LayerKind::User => ws.user.settings,
+        LayerKind::UserLocal => ws.user.settings_local,
+        LayerKind::Project => ws.project.settings,
+        LayerKind::ProjectLocal => ws.project.settings_local,
+    })
+}
+
+fn to_hex(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
+    let mut s = String::with_capacity(bytes.len() * 2);
+    for b in bytes {
+        let _ = write!(&mut s, "{b:02x}");
+    }
+    s
+}
+
+fn from_hex(s: &str) -> Option<[u8; 32]> {
+    if s.len() != 64 {
+        return None;
+    }
+    let mut out = [0u8; 32];
+    for (i, chunk) in s.as_bytes().chunks_exact(2).enumerate() {
+        let hi = hex_digit(chunk[0])?;
+        let lo = hex_digit(chunk[1])?;
+        out[i] = (hi << 4) | lo;
+    }
+    Some(out)
+}
+
+fn hex_digit(c: u8) -> Option<u8> {
+    match c {
+        b'0'..=b'9' => Some(c - b'0'),
+        b'a'..=b'f' => Some(c - b'a' + 10),
+        b'A'..=b'F' => Some(c - b'A' + 10),
+        _ => None,
+    }
+}
+
 /// Load the settings.json tier files for a workspace. On platforms where no
 /// managed-settings path is defined, the managed tier is omitted entirely
 /// (not synthesized as Absent) so `origins` stays clean.
@@ -206,6 +356,32 @@ mod tests {
         assert_eq!(dto.name, "alpha");
         assert_eq!(dto.path, "/work/alpha");
         assert!(dto.added_at.starts_with("2023-"), "got {}", dto.added_at);
+    }
+
+    #[test]
+    fn hex_roundtrips_32_bytes() {
+        let original: [u8; 32] = std::array::from_fn(|i| (i * 7) as u8);
+        let hex = to_hex(&original);
+        assert_eq!(hex.len(), 64);
+        let back = from_hex(&hex).unwrap();
+        assert_eq!(back, original);
+    }
+
+    #[test]
+    fn from_hex_rejects_wrong_length_and_bad_chars() {
+        assert!(from_hex("").is_none());
+        assert!(from_hex("abcd").is_none());
+        assert!(from_hex(&"0".repeat(63)).is_none());
+        assert!(from_hex(&format!("{}{}", "g".repeat(2), "0".repeat(62))).is_none());
+        // Exact 64 hex chars works.
+        assert!(from_hex(&"0".repeat(64)).is_some());
+    }
+
+    #[test]
+    fn from_hex_accepts_upper_and_lower_case() {
+        let lower = "deadbeef".repeat(8);
+        let upper = "DEADBEEF".repeat(8);
+        assert_eq!(from_hex(&lower).unwrap(), from_hex(&upper).unwrap());
     }
 
     #[test]
