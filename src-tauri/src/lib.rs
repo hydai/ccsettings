@@ -4,6 +4,7 @@ pub mod commands;
 pub mod discovery;
 pub mod layers;
 pub mod paths;
+pub mod writers;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
