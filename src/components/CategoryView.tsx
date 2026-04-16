@@ -9,6 +9,7 @@ import { MemoryEditor } from "./MemoryEditor";
 import { ModelEditor } from "./ModelEditor";
 import { PermissionsEditor } from "./PermissionsEditor";
 import { PluginsEditor } from "./PluginsEditor";
+import { Card, SectionLabel } from "./ui";
 import { UnknownKeysPanel } from "./UnknownKeysPanel";
 
 type Props = {
@@ -53,17 +54,17 @@ function renderBody(
 
 function Overview({ merged }: { merged: MergedView }) {
   return (
-    <>
+    <div className="space-y-6">
       <CascadeHeader merged={merged} />
-      <section>
-        <h3 className="text-xs font-medium uppercase tracking-wider text-muted mb-2">
-          Effective merged settings
-        </h3>
-        <pre className="border border-default rounded-lg p-4 surface text-xs font-mono overflow-auto max-h-[50vh]">
-          {JSON.stringify(merged.value, null, 2)}
-        </pre>
+      <section className="space-y-2">
+        <SectionLabel>Effective merged settings</SectionLabel>
+        <Card variant="cream" className="p-5 overflow-hidden">
+          <pre className="font-mono text-xs leading-[1.55] text-body overflow-auto max-h-[50vh]">
+            {JSON.stringify(merged.value, null, 2)}
+          </pre>
+        </Card>
       </section>
       <UnknownKeysPanel merged={merged} />
-    </>
+    </div>
   );
 }

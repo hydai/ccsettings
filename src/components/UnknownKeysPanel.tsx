@@ -1,6 +1,8 @@
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../lib/cn";
 import type { MergedView } from "../types";
+import { Card, HelpNote, SectionLabel } from "./ui";
 
 /** Top-level settings keys that have a dedicated editor tab in the app. */
 const HANDLED_KEYS: readonly string[] = [
@@ -55,7 +57,7 @@ export function UnknownKeysPanel({ merged }: { merged: MergedView }) {
   const { unknown, managed } = categorize(merged.value);
   if (unknown.length === 0 && managed.length === 0) return null;
   return (
-    <section className="mt-8 space-y-4">
+    <section className="space-y-5">
       {unknown.length > 0 && (
         <KeyGroup
           title="Unknown keys"
@@ -88,53 +90,54 @@ function KeyGroup({
   tone: "unknown" | "managed";
 }) {
   return (
-    <div>
-      <div className="flex items-baseline justify-between mb-1">
-        <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
-          {title}
-        </h3>
-        <span className="text-xs text-muted">{buckets.length}</span>
+    <Card
+      variant="soft"
+      className={cn(
+        "p-5 space-y-3",
+        tone === "unknown" && "border-l-[3px] border-amber-500",
+      )}
+    >
+      <div className="flex items-baseline justify-between">
+        <SectionLabel>{title}</SectionLabel>
+        <span className="font-body text-xs text-muted">{buckets.length}</span>
       </div>
-      <p className="text-xs text-muted mb-2">{description}</p>
-      <ul className="space-y-1">
+      <HelpNote>{description}</HelpNote>
+      <ul className="space-y-1.5">
         {buckets.map((b) => (
-          <KeyRow key={b.key} bucket={b} tone={tone} />
+          <KeyRow key={b.key} bucket={b} />
         ))}
       </ul>
-    </div>
+    </Card>
   );
 }
 
-function KeyRow({
-  bucket,
-  tone,
-}: {
-  bucket: Bucket;
-  tone: "unknown" | "managed";
-}) {
+function KeyRow({ bucket }: { bucket: Bucket }) {
   const [open, setOpen] = useState(false);
   return (
-    <li
-      className={cn(
-        "border rounded surface",
-        tone === "unknown"
-          ? "border-amber-500/30"
-          : "border-default",
-      )}
-    >
+    <li className="rounded-soft-sm bg-canvas overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-black/5 dark:hover:bg-white/5"
+        className={cn(
+          "w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left",
+          "transition-colors hover:bg-canvas/80",
+          "focus:outline-none focus-visible:shadow-focus-ink",
+        )}
       >
-        <span className="font-mono text-sm">{bucket.key}</span>
-        <span className="text-xs text-muted">
-          {describe(bucket.value)} · {open ? "hide" : "inspect"}
+        <span className="font-mono text-sm text-ink truncate">{bucket.key}</span>
+        <span className="inline-flex items-center gap-1.5 font-body text-xs text-muted flex-shrink-0">
+          <span>{describe(bucket.value)}</span>
+          <ChevronDown
+            className={cn(
+              "w-3.5 h-3.5 transition-transform",
+              open && "rotate-180",
+            )}
+          />
         </span>
       </button>
       {open && (
-        <pre className="px-3 pb-3 text-xs font-mono overflow-auto max-h-48 whitespace-pre-wrap">
+        <pre className="px-4 pb-3 font-mono text-xs text-body overflow-auto max-h-48 whitespace-pre-wrap">
           {JSON.stringify(bucket.value, null, 2)}
         </pre>
       )}
