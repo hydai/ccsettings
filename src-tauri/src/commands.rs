@@ -11,7 +11,7 @@ use crate::discovery::{self, DiscoveredProject};
 use crate::layers::{self, Layer, LayerContent, LayerKind};
 use crate::paths::{self, WorkspacePaths};
 use crate::writers;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -199,17 +199,6 @@ impl LayerFileDto {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SaveLayerArgs {
-    pub workspace_id: String,
-    pub layer: LayerKind,
-    pub new_value: Value,
-    /// Hex-encoded SHA-256 of the file content at the time of edit-start.
-    /// `None` means "file did not exist when we started; create it now".
-    pub expected_hash: Option<String>,
-}
-
 /// Read a single settings tier for a workspace. Absent files return exists=false;
 /// malformed files return exists=true with parse_error set.
 #[tauri::command]
@@ -236,17 +225,23 @@ pub fn get_layer_content(
 /// string beginning with "conflict:" so the UI can branch into a diff
 /// modal; all other errors return their Display form.
 #[tauri::command]
-pub fn save_layer(state: State<'_, AppState>, args: SaveLayerArgs) -> Result<LayerFileDto, String> {
+pub fn save_layer(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    layer: LayerKind,
+    new_value: Value,
+    expected_hash: Option<String>,
+) -> Result<LayerFileDto, String> {
     let workspace_path = {
         let cfg = state.config.lock().expect("config mutex poisoned");
-        cfg.workspace(&args.workspace_id)
-            .ok_or_else(|| format!("unknown workspace id: {}", args.workspace_id))?
+        cfg.workspace(&workspace_id)
+            .ok_or_else(|| format!("unknown workspace id: {workspace_id}"))?
             .path
             .clone()
     };
-    let path = resolve_layer_path(&workspace_path, args.layer)?;
+    let path = resolve_layer_path(&workspace_path, layer)?;
 
-    let expected = match args.expected_hash.as_deref() {
+    let expected = match expected_hash.as_deref() {
         None => None,
         Some(hex) => Some(
             from_hex(hex)
@@ -254,13 +249,13 @@ pub fn save_layer(state: State<'_, AppState>, args: SaveLayerArgs) -> Result<Lay
         ),
     };
 
-    let mut bytes = serde_json::to_vec_pretty(&args.new_value)
+    let mut bytes = serde_json::to_vec_pretty(&new_value)
         .map_err(|e| format!("serialize new_value: {e}"))?;
     bytes.push(b'\n');
 
     match writers::atomic_write_if(&path, &bytes, expected) {
         Ok(_) => {
-            let reloaded = layers::load_layer(args.layer, path).map_err(|e| e.to_string())?;
+            let reloaded = layers::load_layer(layer, path).map_err(|e| e.to_string())?;
             Ok(LayerFileDto::from_layer(&reloaded))
         }
         Err(writers::WriterError::HashMismatch { .. }) => Err(format!(
