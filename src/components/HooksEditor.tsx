@@ -15,6 +15,24 @@ import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
 import { Button, Card, HelpNote, Input, SectionLabel, Textarea } from "./ui";
 
+/** Built-in Claude Code tool names that can appear in hook matchers.
+ *  Sourced from https://code.claude.com/docs/en/hooks. MCP tools
+ *  (`mcp__<server>__<name>`) aren't enumerable from this editor and
+ *  are handled by regex patterns like `mcp__memory__.*`. */
+const KNOWN_TOOLS = [
+  "Bash",
+  "Edit",
+  "Write",
+  "Read",
+  "Glob",
+  "Grep",
+  "Agent",
+  "WebFetch",
+  "WebSearch",
+  "AskUserQuestion",
+  "ExitPlanMode",
+] as const;
+
 /** All built-in Claude Code hook events, ordered roughly by lifecycle
  *  (session → prompt → tool → response → environment → compaction).
  *  Sourced from https://code.claude.com/docs/en/hooks. */
@@ -247,6 +265,12 @@ export function HooksEditor({ workspace }: Props) {
 
       {!loading && !layerFile?.parse_error && (
         <>
+          <datalist id="hook-matcher-tools">
+            {KNOWN_TOOLS.map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
+
           <Card variant="cream" className="p-5 space-y-2">
             <HelpNote>
               Hooks run when Claude Code hits a matching event. Commands at the
@@ -266,9 +290,16 @@ export function HooksEditor({ workspace }: Props) {
             </HelpNote>
             <HelpNote>
               <strong className="font-semibold text-ink">Matcher:</strong>{" "}
-              tool name pattern, e.g. <code className="font-mono">Bash</code>,{" "}
-              <code className="font-mono">Write|Edit</code>, or empty to match
-              all tools.
+              a built-in tool name (<code className="font-mono">Bash</code>,{" "}
+              <code className="font-mono">Edit</code>,{" "}
+              <code className="font-mono">Write</code>,{" "}
+              <code className="font-mono">Read</code>, …), a pipe-separated
+              list (<code className="font-mono">Edit|Write</code>), or a
+              regex when it contains any other character (
+              <code className="font-mono">^Notebook</code>,{" "}
+              <code className="font-mono">mcp__memory__.*</code>). Empty or{" "}
+              <code className="font-mono">*</code> matches every tool. The
+              field autocompletes built-in names.
             </HelpNote>
             <HelpNote>
               <strong className="font-semibold text-ink">Command:</strong>{" "}
@@ -403,9 +434,10 @@ function HookRow({
           />
           <Input
             type="text"
+            list="hook-matcher-tools"
             value={hook.matcher}
             onChange={(e) => onChange("matcher", e.target.value)}
-            placeholder="matcher (e.g. Bash, Write|Edit)"
+            placeholder="Bash, Write|Edit, mcp__pencil__.*, or empty = all"
             className="flex-1 font-mono !py-2.5"
           />
           <button
