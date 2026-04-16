@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
+import { TIER_LABEL } from "../lib/layers";
 import {
   getLayerContent,
   saveLayer,
@@ -7,33 +8,11 @@ import {
 } from "../state/layerContent";
 import { useCascade } from "../state/cascade";
 import type { LayerKind, Workspace } from "../types";
+import { SaveControls } from "./SaveControls";
+import { TierPicker } from "./TierPicker";
 
 type Kind = "allow" | "deny" | "ask";
 const KINDS: Kind[] = ["allow", "deny", "ask"];
-
-// Writable tiers (managed is read-only for v1).
-const WRITABLE_TIERS: LayerKind[] = [
-  "user",
-  "user-local",
-  "project",
-  "project-local",
-];
-
-const TIER_LABEL: Record<LayerKind, string> = {
-  managed: "Managed",
-  user: "User",
-  "user-local": "User Local",
-  project: "Project",
-  "project-local": "Project Local",
-};
-
-const TIER_DOT: Record<LayerKind, string> = {
-  managed: "bg-layer-managed",
-  user: "bg-layer-user",
-  "user-local": "bg-layer-user-local",
-  project: "bg-layer-project",
-  "project-local": "bg-layer-project-local",
-};
 
 type Lists = Record<Kind, string[]>;
 
@@ -45,7 +24,7 @@ function listsFromLayer(layer: LayerFile | null): Lists {
   const perms = (layer?.content as Record<string, unknown> | null)?.permissions;
   const p = (perms as Record<string, unknown> | undefined) ?? {};
   const arr = (v: unknown): string[] =>
-    Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
   return {
     allow: arr(p.allow),
     deny: arr(p.deny),
@@ -59,18 +38,12 @@ function buildNewValue(original: LayerFile | null, draft: Lists): unknown {
     ...(base.permissions as Record<string, unknown> | undefined),
   };
   for (const k of KINDS) {
-    if (draft[k].length > 0) {
-      perms[k] = draft[k];
-    } else {
-      delete perms[k];
-    }
+    if (draft[k].length > 0) perms[k] = draft[k];
+    else delete perms[k];
   }
   const out = { ...base };
-  if (Object.keys(perms).length > 0) {
-    out.permissions = perms;
-  } else {
-    delete out.permissions;
-  }
+  if (Object.keys(perms).length > 0) out.permissions = perms;
+  else delete out.permissions;
   return out;
 }
 
@@ -147,7 +120,6 @@ export function PermissionsEditor({ workspace }: Props) {
       setLayerFile(result);
       setDraft(listsFromLayer(result));
       setSavedAt(Date.now());
-      // Refresh the cascade so the header and overview reflect the change.
       useCascade.getState().invalidate();
       await cascadeLoad(workspace.id);
     } catch (e) {
@@ -159,44 +131,18 @@ export function PermissionsEditor({ workspace }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3 p-3 border border-default rounded surface">
-        <span className="text-sm text-muted">Write to:</span>
-        {WRITABLE_TIERS.map((t) => (
-          <label
-            key={t}
-            className={cn(
-              "flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer text-sm",
-              target === t
-                ? "bg-black/10 dark:bg-white/10"
-                : "hover:bg-black/5 dark:hover:bg-white/5",
-            )}
-          >
-            <input
-              type="radio"
-              name="target-tier"
-              checked={target === t}
-              onChange={() => setTarget(t)}
-              className="sr-only"
-            />
-            <span className={cn("w-2 h-2 rounded-full", TIER_DOT[t])} />
-            <span>{TIER_LABEL[t]}</span>
-          </label>
-        ))}
-        {layerFile && (
-          <span
-            className="text-xs text-muted font-mono truncate ml-auto"
-            title={layerFile.path}
-          >
-            {layerFile.path}
-          </span>
-        )}
-      </div>
+      <TierPicker
+        value={target}
+        onChange={setTarget}
+        currentPath={layerFile?.path ?? null}
+        name="permissions-tier"
+      />
 
       {loading && <p className="text-sm text-muted">Loading tier…</p>}
       {layerFile?.parse_error && (
         <div className="border border-red-500/30 bg-red-500/5 rounded p-3 text-sm text-red-500">
-          This tier's file could not be parsed: {layerFile.parse_error}. Editing is
-          disabled until the file is fixed.
+          This tier's file could not be parsed: {layerFile.parse_error}.
+          Editing is disabled until the file is fixed.
         </div>
       )}
 
@@ -247,53 +193,15 @@ export function PermissionsEditor({ workspace }: Props) {
             </button>
           </form>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={save}
-              disabled={!dirty || saving}
-              className={cn(
-                "px-4 py-2 rounded text-sm font-medium",
-                dirty && !saving
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-black/10 dark:bg-white/10 text-muted cursor-not-allowed",
-              )}
-            >
-              {saving ? "Saving…" : `Save to ${TIER_LABEL[target]}`}
-            </button>
-            <button
-              type="button"
-              onClick={revert}
-              disabled={!dirty || saving}
-              className={cn(
-                "px-4 py-2 rounded text-sm border border-default",
-                dirty && !saving
-                  ? "hover:bg-black/5 dark:hover:bg-white/5"
-                  : "opacity-40 cursor-not-allowed",
-              )}
-            >
-              Discard changes
-            </button>
-            {savedAt && !dirty && !saving && (
-              <span className="text-xs text-muted">
-                Saved at {new Date(savedAt).toLocaleTimeString()}
-              </span>
-            )}
-          </div>
-
-          {error && (
-            <div className="border border-red-500/30 bg-red-500/5 rounded p-3 text-sm text-red-500">
-              {error.startsWith("conflict:") ? (
-                <>
-                  <strong>Conflict:</strong> the file changed on disk while you
-                  were editing. Click <em>Discard changes</em> to pull the
-                  latest, or copy your edits elsewhere before reloading.
-                </>
-              ) : (
-                error
-              )}
-            </div>
-          )}
+          <SaveControls
+            dirty={dirty}
+            saving={saving}
+            savedAt={savedAt}
+            saveLabel={`Save to ${TIER_LABEL[target]}`}
+            error={error}
+            onSave={save}
+            onDiscard={revert}
+          />
         </>
       )}
     </div>
