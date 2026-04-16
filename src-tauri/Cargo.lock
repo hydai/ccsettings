@@ -426,8 +426,10 @@ dependencies = [
  "tauri-plugin-opener",
  "tempfile",
  "thiserror 2.0.18",
+ "time",
  "tracing",
  "tracing-subscriber",
+ "uuid",
  "walkdir",
 ]
 
