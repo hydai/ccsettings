@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "../lib/cn";
 import { useWorkspaces } from "../state/workspaces";
 import type { DiscoveredProject } from "../types";
@@ -12,8 +12,10 @@ type Props = {
 export function DiscoverPanel({ onClose }: Props) {
   const discover = useWorkspaces((s) => s.discover);
   const add = useWorkspaces((s) => s.add);
-  const existingPaths = useWorkspaces(
-    (s) => new Set(s.workspaces.map((w) => w.path)),
+  const workspaces = useWorkspaces((s) => s.workspaces);
+  const existingPaths = useMemo(
+    () => new Set(workspaces.map((w) => w.path)),
+    [workspaces],
   );
 
   const [loading, setLoading] = useState(true);
