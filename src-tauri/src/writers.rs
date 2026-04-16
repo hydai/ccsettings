@@ -6,6 +6,7 @@
 //! land in a same-directory tempfile, are `fsync`ed, then renamed over
 //! the target. `tempfile::persist` handles the Windows rename semantics.
 
+use crate::backup;
 use crate::layers::sha256;
 use std::fs;
 use std::io::Write;
@@ -78,6 +79,17 @@ pub fn atomic_write_if(
             path: parent.to_path_buf(),
             source,
         })?;
+    }
+
+    // Snapshot prior content to the backup store before overwriting. Failures
+    // are logged but don't block the write — safety here is best-effort
+    // secondary protection; the hash precondition is the primary guarantee.
+    if let Err(e) = backup::backup_before_write(path) {
+        tracing::warn!(
+            target = %path.display(),
+            error = %e,
+            "pre-write backup failed; proceeding with write"
+        );
     }
 
     let mut tmp = tempfile::NamedTempFile::new_in(parent).map_err(|source| WriterError::Io {

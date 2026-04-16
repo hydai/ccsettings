@@ -1,4 +1,5 @@
 pub mod appconfig;
+pub mod backup;
 pub mod cascade;
 pub mod commands;
 pub mod discovery;
