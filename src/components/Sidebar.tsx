@@ -1,12 +1,14 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import { Plus } from "lucide-react";
-import { useEffect } from "react";
+import { Plus, Search } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
 import { useWorkspaces } from "../state/workspaces";
+import { DiscoverPanel } from "./DiscoverPanel";
 
 export function Sidebar() {
   const { workspaces, selectedId, reload, select, add, error, loading } =
     useWorkspaces();
+  const [showDiscover, setShowDiscover] = useState(false);
 
   useEffect(() => {
     reload();
@@ -18,6 +20,8 @@ export function Sidebar() {
       await add(picked);
     }
   }
+
+  const isEmpty = !loading && workspaces.length === 0 && !error;
 
   return (
     <aside className="w-64 flex-shrink-0 surface border-r border-default flex flex-col">
@@ -37,9 +41,18 @@ export function Sidebar() {
         {error && (
           <div className="px-4 py-2 text-sm text-red-500">{error}</div>
         )}
-        {!loading && workspaces.length === 0 && !error && (
-          <div className="px-4 py-2 text-sm text-muted">
-            No workspaces yet. Use “Add workspace” below.
+
+        {isEmpty && (
+          <div className="px-4 py-2 text-sm text-muted space-y-2">
+            <p className="leading-snug">
+              Add your first project to see the cascade of Claude Code
+              settings applied to it.
+            </p>
+            <p className="text-xs leading-snug">
+              If you've used Claude Code before, the{" "}
+              <span className="font-medium">Discover</span> button below can
+              find your existing projects automatically.
+            </p>
           </div>
         )}
 
@@ -63,9 +76,15 @@ export function Sidebar() {
             </li>
           ))}
         </ul>
+
+        {showDiscover && (
+          <div className="p-2">
+            <DiscoverPanel onClose={() => setShowDiscover(false)} />
+          </div>
+        )}
       </div>
 
-      <div className="p-2 border-t border-default">
+      <div className="p-2 border-t border-default space-y-1">
         <button
           type="button"
           onClick={addFromPicker}
@@ -76,6 +95,20 @@ export function Sidebar() {
         >
           <Plus className="w-4 h-4" />
           Add workspace
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowDiscover((v) => !v)}
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-2 rounded text-sm",
+            showDiscover
+              ? "bg-black/10 dark:bg-white/10"
+              : "hover:bg-black/5 dark:hover:bg-white/5",
+          )}
+          aria-expanded={showDiscover}
+        >
+          <Search className="w-4 h-4" />
+          {showDiscover ? "Hide discovery" : "Discover from history"}
         </button>
       </div>
     </aside>

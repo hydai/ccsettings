@@ -56,12 +56,49 @@ function WorkspacePane({ workspace }: { workspace: Workspace }) {
 
 function EmptyState() {
   return (
-    <div className="h-full flex items-center justify-center text-muted">
-      <div className="text-center max-w-md">
-        <p className="text-lg">
-          Add a workspace to inspect its Claude Code settings.
+    <div className="h-full flex items-center justify-center p-8">
+      <div className="max-w-xl space-y-6">
+        <div>
+          <h2 className="text-2xl font-semibold mb-1">Welcome to ccsettings</h2>
+          <p className="text-sm text-muted">
+            A visual companion for Claude Code's layered settings — see what's
+            effective for each project and edit any tier safely.
+          </p>
+        </div>
+
+        <ol className="space-y-3 text-sm">
+          <Step n={1}>
+            <strong>Add a workspace</strong> on the left — pick a folder
+            directly or let Discover pull projects Claude Code has already
+            touched.
+          </Step>
+          <Step n={2}>
+            <strong>Open the Overview tab</strong> — a five-tier cascade header
+            shows which file supplied every top-level setting.
+          </Step>
+          <Step n={3}>
+            <strong>Pick a category</strong> to edit — Permissions, Env, Hooks,
+            MCP, and four more. Every save writes atomically with a SHA-256
+            precondition, and snapshots the prior content in Backups.
+          </Step>
+        </ol>
+
+        <p className="text-xs text-muted">
+          Nothing leaves your machine. ccsettings only reads and writes files
+          you can already edit by hand.
         </p>
       </div>
     </div>
+  );
+}
+
+function Step({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-black/10 dark:bg-white/10 text-xs flex items-center justify-center font-medium">
+        {n}
+      </span>
+      <span className="pt-0.5">{children}</span>
+    </li>
   );
 }
