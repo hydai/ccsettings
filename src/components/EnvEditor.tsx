@@ -137,7 +137,7 @@ export function EnvEditor({ workspace }: Props) {
     setError(null);
   }
 
-  async function save() {
+  async function save(force = false) {
     // Duplicate-key guard: build a map; last wins, warn the user once.
     const seen = new Set<string>();
     for (const e of entries) {
@@ -159,7 +159,7 @@ export function EnvEditor({ workspace }: Props) {
         workspaceId: workspace.id,
         layer: target,
         newValue,
-        expectedHash: layerFile?.hash ?? null,
+        expectedHash: force ? null : (layerFile?.hash ?? null),
       });
       setLayerFile(result);
       setEntries(entriesFromLayer(result));
@@ -291,7 +291,8 @@ export function EnvEditor({ workspace }: Props) {
             savedAt={savedAt}
             saveLabel={`Save to ${TIER_LABEL[target]}`}
             error={error}
-            onSave={save}
+            onSave={() => save(false)}
+            onForceSave={() => save(true)}
             onDiscard={revert}
           />
 

@@ -109,7 +109,7 @@ export function PermissionsEditor({ workspace }: Props) {
     setError(null);
   }
 
-  async function save() {
+  async function save(force = false) {
     setSaving(true);
     setError(null);
     try {
@@ -118,7 +118,7 @@ export function PermissionsEditor({ workspace }: Props) {
         workspaceId: workspace.id,
         layer: target,
         newValue,
-        expectedHash: layerFile?.hash ?? null,
+        expectedHash: force ? null : (layerFile?.hash ?? null),
       });
       setLayerFile(result);
       setDraft(listsFromLayer(result));
@@ -202,7 +202,8 @@ export function PermissionsEditor({ workspace }: Props) {
             savedAt={savedAt}
             saveLabel={`Save to ${TIER_LABEL[target]}`}
             error={error}
-            onSave={save}
+            onSave={() => save(false)}
+            onForceSave={() => save(true)}
             onDiscard={revert}
           />
 

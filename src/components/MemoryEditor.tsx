@@ -95,7 +95,7 @@ export function MemoryEditor({ workspace }: Props) {
     setError(null);
   }
 
-  async function save() {
+  async function save(force = false) {
     setSaving(true);
     setError(null);
     try {
@@ -104,7 +104,7 @@ export function MemoryEditor({ workspace }: Props) {
         scope,
         kind,
         draft,
-        file?.hash ?? null,
+        force ? null : (file?.hash ?? null),
       );
       setFile(result);
       setDraft(result.content ?? "");
@@ -193,7 +193,8 @@ export function MemoryEditor({ workspace }: Props) {
             savedAt={savedAt}
             saveLabel={file?.exists ? "Save" : "Create file"}
             error={error}
-            onSave={save}
+            onSave={() => save(false)}
+            onForceSave={() => save(true)}
             onDiscard={revert}
           />
 
