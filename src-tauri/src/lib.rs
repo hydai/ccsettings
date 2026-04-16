@@ -4,6 +4,7 @@ pub mod commands;
 pub mod discovery;
 pub mod layers;
 pub mod paths;
+pub mod plugins;
 pub mod writers;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -29,6 +30,7 @@ pub fn run() {
             commands::save_layer,
             commands::read_memory_file,
             commands::save_memory_file,
+            commands::get_plugins_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

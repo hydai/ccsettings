@@ -10,9 +10,11 @@ use crate::cascade::{self, MergedView};
 use crate::discovery::{self, DiscoveredProject};
 use crate::layers::{self, Layer, LayerContent, LayerKind};
 use crate::paths::{self, WorkspacePaths};
+use crate::plugins::{self, InstalledPlugin};
 use crate::writers;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
@@ -264,6 +266,53 @@ pub fn save_layer(
         )),
         Err(e) => Err(e.to_string()),
     }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PluginsStateDto {
+    pub installed: Vec<InstalledPlugin>,
+    /// Per-tier enablement: layer kind (kebab-case) → `{ "name@marketplace": bool }`.
+    pub per_tier: BTreeMap<String, BTreeMap<String, bool>>,
+}
+
+/// Read the installed-plugins registry and the per-tier `enabledPlugins` map
+/// for a workspace. Frontend joins them into a toggle list.
+#[tauri::command]
+pub fn get_plugins_state(
+    state: State<'_, AppState>,
+    workspace_id: String,
+) -> Result<PluginsStateDto, String> {
+    let workspace_path = {
+        let cfg = state.config.lock().expect("config mutex poisoned");
+        cfg.workspace(&workspace_id)
+            .ok_or_else(|| format!("unknown workspace id: {workspace_id}"))?
+            .path
+            .clone()
+    };
+    let ws = WorkspacePaths::new(workspace_path.clone()).map_err(|e| e.to_string())?;
+    let installed =
+        plugins::load_installed_plugins(&ws.user.installed_plugins).map_err(|e| e.to_string())?;
+
+    let workspace_layers = load_workspace_layers(&workspace_path).map_err(|e| e.to_string())?;
+    let mut per_tier: BTreeMap<String, BTreeMap<String, bool>> = BTreeMap::new();
+    for layer in &workspace_layers {
+        if let LayerContent::Parsed(v) = &layer.content {
+            if let Some(obj) = v.get("enabledPlugins").and_then(|x| x.as_object()) {
+                let entries: BTreeMap<String, bool> = obj
+                    .iter()
+                    .filter_map(|(k, v)| v.as_bool().map(|b| (k.clone(), b)))
+                    .collect();
+                if !entries.is_empty() {
+                    per_tier.insert(layer.kind.as_str().to_string(), entries);
+                }
+            }
+        }
+    }
+
+    Ok(PluginsStateDto {
+        installed,
+        per_tier,
+    })
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]

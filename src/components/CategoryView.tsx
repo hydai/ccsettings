@@ -5,6 +5,7 @@ import { EnvEditor } from "./EnvEditor";
 import { MemoryEditor } from "./MemoryEditor";
 import { ModelEditor } from "./ModelEditor";
 import { PermissionsEditor } from "./PermissionsEditor";
+import { PluginsEditor } from "./PluginsEditor";
 
 type Props = {
   category: Category;
@@ -24,6 +25,8 @@ export function CategoryView({ category, workspace, merged }: Props) {
       return <ModelEditor workspace={workspace} />;
     case "memory":
       return <MemoryEditor workspace={workspace} />;
+    case "plugins":
+      return <PluginsEditor workspace={workspace} />;
     default:
       return (
         <ComingSoon
