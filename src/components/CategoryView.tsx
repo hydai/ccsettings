@@ -1,6 +1,7 @@
 import type { Category } from "../state/ui";
 import type { MergedView, Workspace } from "../types";
 import { CascadeHeader } from "./CascadeHeader";
+import { EnvEditor } from "./EnvEditor";
 import { PermissionsEditor } from "./PermissionsEditor";
 
 type Props = {
@@ -15,6 +16,8 @@ export function CategoryView({ category, workspace, merged }: Props) {
       return <Overview merged={merged} />;
     case "permissions":
       return <PermissionsEditor workspace={workspace} />;
+    case "env":
+      return <EnvEditor workspace={workspace} />;
     default:
       return (
         <ComingSoon
