@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { cn } from "../lib/cn";
 import {
   TIER_DESCRIPTION,
@@ -7,13 +8,14 @@ import {
   WRITABLE_TIERS,
 } from "../lib/layers";
 import type { LayerKind } from "../types";
+import { Card, SectionLabel } from "./ui";
 
 type Props = {
   value: LayerKind;
   onChange: (tier: LayerKind) => void;
-  /** Absolute path of the selected tier's file, shown on the right for context. */
+  /** Absolute path of the selected tier's file, shown on the right. */
   currentPath?: string | null;
-  /** Optional radio group name when multiple pickers render simultaneously. */
+  /** Radio group name when multiple pickers render simultaneously. */
   name?: string;
 };
 
@@ -24,44 +26,60 @@ export function TierPicker({
   name = "tier-picker",
 }: Props) {
   return (
-    <div className="p-3 border border-default rounded surface space-y-2">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm text-muted">Write to:</span>
-        {WRITABLE_TIERS.map((t) => (
-          <label
-            key={t}
-            title={TIER_DESCRIPTION[t]}
-            className={cn(
-              "flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer text-sm",
-              value === t
-                ? "bg-black/10 dark:bg-white/10"
-                : "hover:bg-black/5 dark:hover:bg-white/5",
-            )}
-          >
-            <input
-              type="radio"
-              name={name}
-              checked={value === t}
-              onChange={() => onChange(t)}
-              className="sr-only"
-            />
-            <span className={cn("w-2 h-2 rounded-full", TIER_DOT[t])} />
-            <span>{TIER_LABEL[t]}</span>
-            <span className="text-xs text-muted hidden lg:inline">
-              · {TIER_SUBTITLE[t]}
-            </span>
-          </label>
-        ))}
+    <Card variant="cream" className="p-7">
+      <div className="flex items-center justify-between gap-4 mb-3">
+        <SectionLabel>Write to</SectionLabel>
         {currentPath && (
           <span
-            className="text-xs text-muted font-mono truncate ml-auto"
+            className="font-mono text-[11px] text-muted truncate max-w-[380px]"
             title={currentPath}
           >
             {currentPath}
           </span>
         )}
       </div>
-      <p className="text-xs text-muted">{TIER_DESCRIPTION[value]}</p>
-    </div>
+
+      <div className="flex flex-wrap items-center gap-2.5">
+        {WRITABLE_TIERS.map((t) => {
+          const active = value === t;
+          return (
+            <label
+              key={t}
+              title={TIER_DESCRIPTION[t]}
+              className={cn(
+                "inline-flex items-center gap-2.5 rounded-full cursor-pointer transition-colors",
+                "font-body text-[13px] px-[18px] py-2.5",
+                active
+                  ? "bg-ink text-card font-semibold shadow-lift"
+                  : "bg-card border border-hairline text-ink font-medium hover:bg-canvas",
+              )}
+            >
+              <input
+                type="radio"
+                name={name}
+                checked={active}
+                onChange={() => onChange(t)}
+                className="sr-only"
+              />
+              <span className={cn("w-2.5 h-2.5 rounded-full", TIER_DOT[t])} />
+              <span>{TIER_LABEL[t]}</span>
+              <span
+                className={cn(
+                  "text-xs hidden lg:inline",
+                  active ? "text-card/70" : "text-muted",
+                )}
+              >
+                · {TIER_SUBTITLE[t]}
+              </span>
+              {active && <Check className="w-3 h-3 ml-0.5" strokeWidth={2.5} />}
+            </label>
+          );
+        })}
+      </div>
+
+      <p className="font-body text-xs leading-[1.55] text-muted mt-3">
+        {TIER_DESCRIPTION[value]}
+      </p>
+    </Card>
   );
 }
