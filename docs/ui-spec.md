@@ -144,41 +144,51 @@ collapse on short windows.
 ## 5. Design tokens
 
 All tokens live in `src/styles.css` (CSS variables) and
-`tailwind.config.ts` (Tailwind extend).
+`tailwind.config.ts` (Tailwind `theme.extend`). The app ships light-only
+for v1; a dark variant is planned (the `:root.dark` hook is reserved).
 
-### 5.1 Color — theme tokens
+### 5.1 Color — surface tokens
 
-Tokens are light-first with dark overrides via `prefers-color-scheme`
-or an explicit `.dark` class on `<html>`.
-
-| Token | Light | Dark | Used for |
+| Token | CSS var | Hex | Used for |
 |---|---|---|---|
-| `--bg` | `#ffffff` | `#0b1120` | Window background |
-| `--fg` | `#0f172a` | `#e2e8f0` | Default text |
-| `--muted` | `#64748b` | `#94a3b8` | Secondary text, help copy |
-| `--surface` | `#f8fafc` | `#0f172a` | Cards, panels, inputs |
-| `--border` | `#e2e8f0` | `#1e293b` | Separators, input outlines |
-| `--accent` | `#3b82f6` | `#60a5fa` | Primary CTA tint |
+| canvas | `--canvas` | `#F3EBE2` | Cream app background; inline form cards; input fill |
+| pad | `--pad` | `#C5BEB6` | Taupe "bento" section wrappers |
+| card | `--card` | `#FFFFFF` | Elevated white cards, list items |
+| ink | `--ink` | `#1A1A1A` | Primary text, primary CTA fill, save bar, inverse surfaces |
+| ink-alt | `--ink-alt` | `#2D2926` | Dark inverse accent (hero tile, alt primaries) |
+| body | `--body` | `#3D3D3D` | Body copy |
+| muted | `--muted` | `#6B6B6B` | Secondary / help copy |
+| caption | `--caption` | `#8C8782` | Section labels (`§ 01 —`) |
+| accent | `--accent` | `#7D6B3D` | Olive accent — swatch rows, soft info pills |
+| conflict | `--conflict` | `#7F1D1D` | Save bar CONFLICT-state fill |
+| danger | — | `#B23A3A` | Destructive button outline |
+| danger-soft | — | `#B4301F` | Input error outline + error help copy |
+| hairline | `--hairline` | `#0000001f` | 1 px card/input strokes (12% alpha black) |
+| focus-shadow | `--focus-shadow` | `#1a1a1a14` | Input focus spread shadow |
 
-Exposed as Tailwind utilities: `.surface`, `.border-default`,
-`.text-muted`.
+Exposed to components as Tailwind utilities: `bg-canvas`, `bg-pad`,
+`bg-card`, `text-ink`, `text-body`, `text-muted`, `text-caption`,
+`border-hairline`, etc. Legacy utilities `.surface`, `.border-default`,
+`.text-muted` from the pre-Soft-Bento design still resolve via CSS vars.
 
 ### 5.2 Color — layer (tier) palette
 
-Used for the cascade dots and "effective from X" badges. Shared
-between `TierPicker`, `CascadeHeader`, backup badges, and effective
-labels.
+Used for the cascade dots, env-row source tags, and "effective from X"
+badges. Shared between `TierPicker`, `CascadeHeader`, backup badges, and
+effective labels. Re-picked in the Soft Bento pass to harmonize with the
+cream canvas — the designer chose a descending-warmth gradient through
+the write-target tiers so Project Local lands near pink.
 
 | Tier | Hex | Tailwind class |
 |---|---|---|
-| Managed | `#8b5cf6` violet | `bg-layer-managed` |
-| User | `#3b82f6` blue | `bg-layer-user` |
-| User Local | `#06b6d4` cyan | `bg-layer-user-local` |
-| Project | `#10b981` emerald | `bg-layer-project` |
-| Project Local | `#f59e0b` amber | `bg-layer-project-local` |
+| Managed | `#7C5CE0` violet | `bg-layer-managed` |
+| User | `#6BA3FF` blue | `bg-layer-user` |
+| User Local | `#2DB3A0` teal | `bg-layer-user-local` |
+| Project | `#D97A37` orange | `bg-layer-project` |
+| Project Local | `#C45183` pink | `bg-layer-project-local` |
 
-These are **2 px dots** in compact contexts (chip rows) and a
-dot + label in expanded contexts.
+These are **10 px dots** inline (tier pills, cascade columns) and
+**14 %-alpha pill tags** on env rows.
 
 ### 5.3 Semantic colors
 
@@ -191,9 +201,14 @@ dot + label in expanded contexts.
 
 ### 5.4 Typography
 
-- **Sans** (default): system stack — `-apple-system, BlinkMacSystemFont,
-  "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`.
-- **Mono**: `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`.
+Loaded from Google Fonts via `<link>` in `index.html`.
+
+| Family | Weights | Tailwind | Use |
+|---|---|---|---|
+| Geist | 400 / 500 / 600 | `font-sans` | Default UI text, headings, chip labels |
+| Geist Mono | 400 / 500 | `font-mono` | Paths, rules, JSON, small captions (`§ 01 —`) |
+| Inter | 400 / 500 / 600 | `font-body` | Body copy, category descriptions, help notes |
+| Playfair Display | 500 / 600 | `font-display` | Large display — brand wordmark, section §-headings |
 
 Sizes (Tailwind):
 
@@ -203,10 +218,10 @@ Sizes (Tailwind):
 | `text-lg` (18 px) | Sidebar brand title, category header |
 | `text-sm` (14 px) | Body text, most inputs, tab labels |
 | `text-xs` (12 px) | Secondary/help text, tier subtitles, metadata |
-| `text-[10px]` | Timestamp suffixes, column subtitles |
+| `text-[10px]` | Timestamp suffixes, column subtitles, section mono labels |
 
 Line-height: default Tailwind; `leading-snug` (1.375) on dense help
-blocks.
+blocks; `leading-[1.55]` on Inter body paragraphs per the Soft Bento spec.
 
 ### 5.5 Spacing
 
@@ -233,12 +248,34 @@ Lucide icons. Currently used:
 
 ### 5.7 Corners & borders
 
-- Cards / panels: `rounded` (4 px) or `rounded-lg` (8 px, for card-y
-  containers like cascade columns and BackupsList entries).
-- Inputs: `rounded` (4 px).
-- Buttons: `rounded` (4 px).
-- Border width: `border` (1 px) with `border-default`. Error banners
-  use `border-red-500/30` (30% alpha).
+Three radii plus pill, one elevation — the Soft Bento discipline.
+
+| Size | Tailwind | Use |
+|---|---|---|
+| 10 px | `rounded-soft-sm` | Inputs, env rows |
+| 12 px | `rounded-soft-md` | Buttons-in-card, cascade columns, save bar, list cards |
+| 16 px | `rounded-soft-lg` | Content cards (tier-picker, env, form) |
+| 20 px | `rounded-soft-xl` | Outer shell pads wrapping primary panels |
+| Pill | `rounded-full` | All buttons, all chips, all tags |
+
+Elevation is a **single** soft shadow: `shadow-soft` (`0 1px 2px
+#0000000a`). One exception: the active tier pill uses `shadow-lift`
+(`0 2px 8px #1a1a1a33`) to stand out against the cream card.
+
+Stroke width: `border` (1 px) with `border-hairline`. Focus inputs use
+a 1.5 px `border-ink` plus a 3 px spread `shadow-focus-ink`. Error
+inputs use a 1.5 px `border-danger-soft`.
+
+### 5.8 Design system
+
+Named system: **Soft Bento**. Canonical source is the Pencil file
+`ccsettings-ui.pen` (frame `IT54D`). The text mirror for implementers
+who can't open Pencil will live in `docs/design-system.md` (added in
+Phase 6). Principles, quoted from the design cover:
+
+> Two surfaces, three radii, one shadow. Everything else is restraint —
+> a paper-warm canvas, a taupe bento that holds soft white cards, and
+> one inverse block for the things that matter most.
 
 ---
 

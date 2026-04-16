@@ -4,33 +4,31 @@
 
 @layer base {
   :root {
-    color-scheme: light dark;
-    --bg: #ffffff;
-    --fg: #0f172a;
-    --muted: #64748b;
-    --surface: #f8fafc;
-    --border: #e2e8f0;
-    --accent: #3b82f6;
+    color-scheme: light;
+
+    /* Soft Bento palette (mirrored from tailwind.config.ts for use outside utilities). */
+    --canvas: #f3ebe2;
+    --pad: #c5beb6;
+    --card: #ffffff;
+    --ink: #1a1a1a;
+    --ink-alt: #2d2926;
+    --body: #3d3d3d;
+    --muted: #6b6b6b;
+    --caption: #8c8782;
+    --accent: #7d6b3d;
+    --conflict: #7f1d1d;
+    --hairline: #0000001f;
+    --focus-shadow: #1a1a1a14;
+
+    /* Legacy aliases kept so Phase 1 does not need to touch components. */
+    --bg: var(--canvas);
+    --fg: var(--ink);
+    --surface: var(--card);
+    --border: var(--hairline);
   }
 
   :root.dark {
-    --bg: #0b1120;
-    --fg: #e2e8f0;
-    --muted: #94a3b8;
-    --surface: #0f172a;
-    --border: #1e293b;
-    --accent: #60a5fa;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root:not(.light) {
-      --bg: #0b1120;
-      --fg: #e2e8f0;
-      --muted: #94a3b8;
-      --surface: #0f172a;
-      --border: #1e293b;
-      --accent: #60a5fa;
-    }
+    /* Reserved for a future dark-mode pass. */
   }
 
   html,
@@ -41,19 +39,21 @@
 
   body {
     margin: 0;
-    background: var(--bg);
-    color: var(--fg);
+    background: var(--canvas);
+    color: var(--body);
     font-family: theme("fontFamily.sans");
     -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer utilities {
+  /* Legacy aliases — superseded by Tailwind extended colors but retained so
+     current component className strings keep resolving during Phase 1. */
   .surface {
-    background: var(--surface);
+    background: var(--card);
   }
   .border-default {
-    border-color: var(--border);
+    border-color: var(--hairline);
   }
   .text-muted {
     color: var(--muted);
