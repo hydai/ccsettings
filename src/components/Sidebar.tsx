@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
 import { useWorkspaces } from "../state/workspaces";
 import { DiscoverPanel } from "./DiscoverPanel";
+import { Button, SectionLabel } from "./ui";
 
 export function Sidebar() {
   const { workspaces, selectedId, reload, select, add, error, loading } =
@@ -24,52 +25,64 @@ export function Sidebar() {
   const isEmpty = !loading && workspaces.length === 0 && !error;
 
   return (
-    <aside className="w-64 flex-shrink-0 surface border-r border-default flex flex-col">
-      <div className="p-4 border-b border-default">
-        <h1 className="text-lg font-semibold">ccsettings</h1>
-        <p className="text-xs text-muted">Claude Code settings inspector</p>
+    <aside className="w-64 flex-shrink-0 flex flex-col border-r border-hairline bg-canvas">
+      <div className="px-5 py-4 border-b border-hairline">
+        <h1 className="font-display text-2xl font-medium text-ink leading-none">
+          ccsettings
+        </h1>
+        <p className="font-body text-xs text-muted mt-1">
+          Claude Code settings inspector
+        </p>
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto">
-        <div className="px-3 py-2 text-xs uppercase tracking-wider text-muted">
-          Workspaces
+        <div className="px-4 pt-4 pb-2">
+          <SectionLabel>Workspaces</SectionLabel>
         </div>
 
         {loading && (
-          <div className="px-4 py-2 text-sm text-muted">Loading…</div>
+          <div className="px-4 py-2 font-body text-sm text-muted">Loading…</div>
         )}
         {error && (
-          <div className="px-4 py-2 text-sm text-red-500">{error}</div>
+          <div className="px-4 py-2 font-body text-sm text-danger-soft">
+            {error}
+          </div>
         )}
 
         {isEmpty && (
-          <div className="px-4 py-2 text-sm text-muted space-y-2">
-            <p className="leading-snug">
-              Add your first project to see the cascade of Claude Code
-              settings applied to it.
+          <div className="px-4 py-2 font-body text-sm text-muted space-y-2 leading-[1.55]">
+            <p>
+              Add your first project to see the cascade of Claude Code settings
+              applied to it.
             </p>
-            <p className="text-xs leading-snug">
-              If you've used Claude Code before, the{" "}
-              <span className="font-medium">Discover</span> button below can
-              find your existing projects automatically.
+            <p className="text-xs">
+              If you&apos;ve used Claude Code before, the{" "}
+              <span className="font-semibold text-body">Discover</span> button
+              below can find your existing projects automatically.
             </p>
           </div>
         )}
 
-        <ul>
+        <ul className="px-2 space-y-1">
           {workspaces.map((w) => (
             <li key={w.id}>
               <button
                 type="button"
                 onClick={() => select(w.id)}
                 className={cn(
-                  "w-full text-left px-4 py-2 transition-colors",
-                  "hover:bg-black/5 dark:hover:bg-white/5",
-                  selectedId === w.id && "bg-black/10 dark:bg-white/10",
+                  "w-full text-left px-3 py-2.5 rounded-soft-sm transition-colors",
+                  selectedId === w.id
+                    ? "bg-card shadow-soft"
+                    : "hover:bg-card/60",
                 )}
               >
-                <div className="font-medium text-sm truncate">{w.name}</div>
-                <div className="text-xs text-muted truncate" title={w.path}>
+                <div className="font-sans font-semibold text-sm text-ink truncate">
+                  {w.name}
+                </div>
+                <div
+                  className="font-mono text-[11px] text-muted truncate mt-0.5"
+                  title={w.path}
+                >
                   {w.path}
                 </div>
               </button>
@@ -78,38 +91,32 @@ export function Sidebar() {
         </ul>
 
         {showDiscover && (
-          <div className="p-2">
+          <div className="p-3">
             <DiscoverPanel onClose={() => setShowDiscover(false)} />
           </div>
         )}
       </div>
 
-      <div className="p-2 border-t border-default space-y-1">
-        <button
-          type="button"
+      <div className="p-3 border-t border-hairline space-y-1.5">
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={addFromPicker}
-          className={cn(
-            "w-full flex items-center gap-2 px-3 py-2 rounded text-sm",
-            "hover:bg-black/5 dark:hover:bg-white/5",
-          )}
+          className="w-full justify-start"
         >
           <Plus className="w-4 h-4" />
           Add workspace
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant={showDiscover ? "secondary" : "ghost"}
+          size="sm"
           onClick={() => setShowDiscover((v) => !v)}
-          className={cn(
-            "w-full flex items-center gap-2 px-3 py-2 rounded text-sm",
-            showDiscover
-              ? "bg-black/10 dark:bg-white/10"
-              : "hover:bg-black/5 dark:hover:bg-white/5",
-          )}
+          className="w-full justify-start"
           aria-expanded={showDiscover}
         >
           <Search className="w-4 h-4" />
           {showDiscover ? "Hide discovery" : "Discover from history"}
-        </button>
+        </Button>
       </div>
     </aside>
   );

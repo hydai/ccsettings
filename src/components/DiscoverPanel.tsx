@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
 import { useWorkspaces } from "../state/workspaces";
 import type { DiscoveredProject } from "../types";
+import { Button, Card, HelpNote } from "./ui";
 
 type Props = {
   onClose: () => void;
@@ -11,8 +12,8 @@ type Props = {
 export function DiscoverPanel({ onClose }: Props) {
   const discover = useWorkspaces((s) => s.discover);
   const add = useWorkspaces((s) => s.add);
-  const existingPaths = useWorkspaces((s) =>
-    new Set(s.workspaces.map((w) => w.path)),
+  const existingPaths = useWorkspaces(
+    (s) => new Set(s.workspaces.map((w) => w.path)),
   );
 
   const [loading, setLoading] = useState(true);
@@ -69,69 +70,71 @@ export function DiscoverPanel({ onClose }: Props) {
   );
 
   return (
-    <div className="border border-default rounded surface max-h-[60vh] overflow-auto">
-      <div className="sticky top-0 surface border-b border-default p-3 flex items-center justify-between">
-        <div>
-          <div className="text-sm font-medium">
+    <Card
+      variant="soft"
+      className="max-h-[60vh] overflow-hidden flex flex-col"
+    >
+      <div className="p-3 border-b border-hairline flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-sans text-sm font-semibold text-ink">
             Projects Claude Code has touched
           </div>
-          <div className="text-xs text-muted">
+          <div className="font-body text-[11px] text-muted mt-0.5 leading-[1.4]">
             Pulled from ~/.claude/projects/ · {importable.length} available ·{" "}
             {candidates.length - importable.length} already added
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-xs text-muted hover:text-current px-2 py-1 rounded hover:bg-black/5 dark:hover:bg-white/5"
-        >
+        <Button variant="ghost" size="sm" onClick={onClose}>
           Close
-        </button>
+        </Button>
       </div>
 
       {loading && (
-        <div className="p-4 flex items-center gap-2 text-sm text-muted">
+        <div className="p-4 flex items-center gap-2 font-body text-sm text-muted">
           <Loader2 className="w-4 h-4 animate-spin" />
           Reading transcript metadata…
         </div>
       )}
 
       {error && (
-        <div className="m-3 border border-red-500/30 bg-red-500/5 rounded p-3 text-sm text-red-500">
+        <div className="m-3 border-[1.5px] border-danger-soft bg-canvas rounded-soft-sm p-3 font-body text-sm text-danger-soft">
           {error}
         </div>
       )}
 
       {!loading && importable.length === 0 && !error && (
-        <div className="p-4 text-sm text-muted italic">
-          Nothing new to import. Either Claude Code hasn't opened any projects
-          yet, or every discovered project is already in your workspace list.
-        </div>
+        <HelpNote className="p-4 italic">
+          Nothing new to import. Either Claude Code hasn&apos;t opened any
+          projects yet, or every discovered project is already in your workspace
+          list.
+        </HelpNote>
       )}
 
-      <ul className="divide-y divide-default/40">
+      <ul className="flex-1 overflow-auto divide-y divide-hairline">
         {importable.map((c) => {
           const isSelected = c.cwd ? selected.has(c.cwd) : false;
           return (
             <li key={c.slug}>
               <label
                 className={cn(
-                  "flex items-start gap-3 px-3 py-2 cursor-pointer",
-                  "hover:bg-black/5 dark:hover:bg-white/5",
-                  isSelected && "bg-black/5 dark:bg-white/5",
+                  "flex items-start gap-3 px-3 py-2.5 cursor-pointer transition-colors",
+                  isSelected ? "bg-canvas" : "hover:bg-canvas/60",
                 )}
               >
                 <input
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => c.cwd && toggle(c.cwd)}
-                  className="mt-1"
+                  className="mt-1 accent-ink"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-mono truncate" title={c.cwd ?? ""}>
+                  <div
+                    className="font-mono text-[11px] truncate text-ink"
+                    title={c.cwd ?? ""}
+                  >
                     {c.cwd}
                   </div>
-                  <div className="text-xs text-muted">
+                  <div className="font-body text-[11px] text-muted mt-0.5">
                     {c.transcript_count} transcript
                     {c.transcript_count === 1 ? "" : "s"}
                     {c.last_active_unix_millis
@@ -146,36 +149,31 @@ export function DiscoverPanel({ onClose }: Props) {
       </ul>
 
       {importable.length > 0 && (
-        <div className="sticky bottom-0 surface border-t border-default p-3 flex items-center justify-between">
-          <div className="text-xs text-muted">
+        <div className="border-t border-hairline p-3 flex items-center justify-between">
+          <div className="font-body text-xs text-muted">
             {selected.size} selected
           </div>
           <div className="flex gap-2">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onClose}
               disabled={importing}
-              className="px-3 py-1.5 rounded text-sm border border-default hover:bg-black/5 dark:hover:bg-white/5"
             >
               Cancel
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={importSelected}
               disabled={selected.size === 0 || importing}
-              className={cn(
-                "px-3 py-1.5 rounded text-sm font-medium",
-                selected.size > 0 && !importing
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-black/10 dark:bg-white/10 text-muted cursor-not-allowed",
-              )}
             >
               {importing ? "Importing…" : `Import ${selected.size}`}
-            </button>
+            </Button>
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
