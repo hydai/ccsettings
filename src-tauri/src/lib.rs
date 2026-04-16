@@ -1,20 +1,29 @@
 pub mod appconfig;
 pub mod cascade;
+pub mod commands;
 pub mod discovery;
 pub mod layers;
 pub mod paths;
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .try_init();
+
+    let state = commands::AppState::load();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .plugin(tauri_plugin_dialog::init())
+        .manage(state)
+        .invoke_handler(tauri::generate_handler![
+            commands::list_workspaces,
+            commands::add_workspace,
+            commands::remove_workspace,
+            commands::rename_workspace,
+            commands::discover_workspaces_from_history,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
