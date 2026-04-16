@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { useCascade } from "../state/cascade";
+import { useUi } from "../state/ui";
 import { useWorkspaces } from "../state/workspaces";
-import { CascadeHeader } from "./CascadeHeader";
+import { CategoryPicker } from "./CategoryPicker";
+import { CategoryView } from "./CategoryView";
 import { Sidebar } from "./Sidebar";
 import type { Workspace } from "../types";
 
@@ -14,18 +16,16 @@ export function AppShell() {
     <div className="flex h-screen">
       <Sidebar />
       <main className="flex-1 min-w-0 overflow-auto">
-        {selected ? (
-          <WorkspaceView workspace={selected} />
-        ) : (
-          <EmptyState />
-        )}
+        {selected ? <WorkspacePane workspace={selected} /> : <EmptyState />}
       </main>
     </div>
   );
 }
 
-function WorkspaceView({ workspace }: { workspace: Workspace }) {
+function WorkspacePane({ workspace }: { workspace: Workspace }) {
   const { merged, loading, error, load } = useCascade();
+  const category = useUi((s) => s.category);
+
   useEffect(() => {
     load(workspace.id);
   }, [workspace.id, load]);
@@ -37,6 +37,8 @@ function WorkspaceView({ workspace }: { workspace: Workspace }) {
         <p className="text-sm text-muted mt-1 font-mono">{workspace.path}</p>
       </header>
 
+      <CategoryPicker />
+
       {loading && !merged && (
         <p className="text-sm text-muted">Loading cascade…</p>
       )}
@@ -46,17 +48,7 @@ function WorkspaceView({ workspace }: { workspace: Workspace }) {
         </div>
       )}
       {merged && (
-        <>
-          <CascadeHeader merged={merged} />
-          <section>
-            <h3 className="text-xs font-medium uppercase tracking-wider text-muted mb-2">
-              Effective merged settings
-            </h3>
-            <pre className="border border-default rounded-lg p-4 surface text-xs font-mono overflow-auto max-h-[50vh]">
-              {JSON.stringify(merged.value, null, 2)}
-            </pre>
-          </section>
-        </>
+        <CategoryView category={category} workspace={workspace} merged={merged} />
       )}
     </div>
   );
