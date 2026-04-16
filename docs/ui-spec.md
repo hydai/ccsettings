@@ -845,19 +845,19 @@ across all eight:
 
 | State | When | Visible UI |
 |---|---|---|
-| **Loading** | Initial fetch in flight | "Loading tier…" or "Loading plugins…" in muted text. Rest of the editor content hidden. |
-| **Error** (non-conflict) | Any non-conflict error from the fetch | Red banner with the error message. Editor content hidden. |
-| **Parse error** | Tier file exists but isn't valid JSON | Red banner: "This tier's file could not be parsed: &lt;serde error&gt;. Editing is disabled until the file is fixed." Editor content hidden. |
-| **Empty** | Tier file has no relevant keys | Section-specific empty placeholders ("empty", "no variables at this tier", "no hooks at this tier"). |
-| **Clean** | Loaded, no user edits | All inputs prefilled, Save disabled. |
-| **Dirty** | User has changed something | Save enabled (blue), Discard enabled. |
-| **Saving** | `save_layer` / `save_memory_file` in flight | "Saving…" on the Save button; both buttons disabled. |
-| **Saved** | Save succeeded, state clean | Save/Discard disabled, "Saved at HH:MM:SS" next to buttons. Stays until next edit. |
-| **Conflict** | `Err("conflict:…")` returned | Specialized banner with "Discard and reload from disk" + "Overwrite anyway" buttons. |
-| **Restoring** | Backups drawer restore in flight | Row button shows "Restoring…"; all other rows dimmed. |
+| **Loading** | Initial fetch in flight | "Loading tier…" or "Loading plugins…" in muted body text. Rest of the editor content hidden. |
+| **Error** (non-conflict) | Any non-conflict error from the fetch | Danger-soft bordered card below the inverse save bar. Editor content hidden if the fetch failed; otherwise the bar stays ink and the error renders beneath it. |
+| **Parse error** | Tier file exists but isn't valid JSON | Soft card with a 3 px `border-danger-soft` left-accent: "This tier's file could not be parsed: &lt;serde error&gt;. Editing is disabled until the file is fixed." Editor body hidden. |
+| **Empty** | Tier file has no relevant keys | Section-specific empty placeholders inside a soft card ("empty", "no variables at this tier", "no hooks at this tier"). |
+| **Idle / ready** | Loaded, never edited since mount | Inverse save bar shows `"Ready to edit"` in mono muted copy; both action pills are disabled. |
+| **Dirty** | User has changed something | Inverse save bar shows `"Unsaved changes"`; the Save pill lights up (white-on-ink) with a trailing `⌘S` mono chip; Discard pill enabled beside it. |
+| **Saving** | `save_layer` / `save_memory_file` in flight | Inverse bar: spinner + `"Saving…"` on the left; Save pill fades to translucent `bg-card/20`. |
+| **Saved** | Save succeeded, state clean | Inverse bar: check icon + `"Saved at HH:MM:SS"` in mono; pills disabled until next edit. |
+| **Conflict** | `Err("conflict:…")` returned | Bar itself inverts to `bg-conflict` (`#7F1D1D`) with `"Conflict — the file changed on disk"` on the left and `Discard & reload` + `Overwrite anyway` pills on the right. A HelpNote beneath the bar explains the backup guarantee. |
+| **Restoring** | Backups drawer restore in flight | Row button shows "Restoring…"; all other rows dim slightly. |
 
 Shared loading-state copy: "Loading tier…", "Loading MCP state…",
-"Loading file…".
+"Loading file…", "Loading plugins…".
 
 ---
 
@@ -998,29 +998,29 @@ needs attention.
 - `sr-only` on the actual radio input in TierPicker chips; the
   visible chip is the clickable `<label>` and keyboard-focusable
   via the hidden radio.
+- **Focus ring** (Soft Bento): `focus:outline-none
+  focus-visible:shadow-focus-ink` — a 3 px `#1a1a1a14` spread
+  shadow. Applied on every button, input, chip, toggle, disclosure.
 
 ### 11.2 Known gaps
 
-- **Focus indicators** — using browser defaults, not a designed
-  focus ring. Inconsistent across Tailwind button classes.
 - **Keyboard-only flows** — not formally tested. The Sidebar list
   is a sequence of buttons (Tab should step through them); editors
   are mostly natural tab order but a few custom button groups
   (tri-state plugin/mcp toggles) might trap focus oddly.
-- **Color contrast** — not validated against WCAG AA. Muted text
-  on surface background hasn't been measured. The layer-color
-  dots are purely decorative so the colored-dot-as-signifier
-  problem is mitigated (the tier label is always rendered next
-  to the dot).
+- **Color contrast** — Soft Bento's muted `#6B6B6B` text on the
+  cream `#F3EBE2` canvas is ~4.6:1 (WCAG AA for body), and ink
+  `#1A1A1A` on the same is ~14:1. Danger-soft `#B4301F` on card
+  white is ~5.6:1. Not yet validated at all pairs with automated
+  tools.
 - **Motion** — there are very few transitions, but no respect for
   `prefers-reduced-motion` anywhere.
 - **Screen-reader experience** — untested.
 
 ### 11.3 Design-review questions
 
-- Focus ring style? (Solid, outline, shadow?)
 - Hit-target minimums for the tri-state plugin buttons (currently
-  112 px × 32 px)?
+  112 px × ~30 px).
 - Whether to replace `title` tooltips with an accessible tooltip
   primitive (they're not keyboard-reachable today).
 
@@ -1029,7 +1029,8 @@ needs attention.
 ## 12. Open questions
 
 Items where the current implementation took one reasonable choice
-but there's a real design decision in front of you:
+but there's a real design decision in front of you. **Answered**
+items remain listed for traceability.
 
 1. **Content width cap.** Main-pane content is capped at 1152 px
    and centered. Useful on 4K+ monitors to keep readable line
@@ -1037,8 +1038,11 @@ but there's a real design decision in front of you:
    wide-table categories (MCP with long command lines, Overview's
    merged JSON). Should the cap be a user preference? Category-
    specific? Dropped entirely?
-2. **Light vs dark.** Currently follows `prefers-color-scheme`
-   with no explicit toggle. Toggle in a settings menu?
+2. **Light vs dark.** _Answered (Soft Bento)._ Light-only for v1
+   — the Soft Bento palette is a warm-paper single theme with
+   dark `#1A1A1A` reserved for inverse accents (save bar,
+   primary CTAs). The `:root.dark` hook remains for a future
+   dark-mode pass; no dark tokens are defined today.
 3. **Category label alias.** "Env" is techy; users called it
    "Environment variables" in some tests. We currently use the
    short name as the tab and the long name as the section title.
@@ -1046,22 +1050,38 @@ but there's a real design decision in front of you:
 4. **Tier picker layout.** A four-chip row doesn't scale to >4
    tiers (we have five — Managed is read-only). Should Managed
    appear as a disabled chip so users understand it exists?
+   **Still open** — Soft Bento left this as-is; the mono
+   caption above the picker ("Write to") frames the chips as
+   write-targets so the absence of Managed reads as
+   "not-writeable" rather than "forgotten".
 5. **Overview merged JSON.** Plain `<pre>` is fast but a proper
    JSON tree view with collapse/expand and origin badges per
    leaf would be higher-value. Worth the complexity?
 6. **Backups drawer density.** One row per snapshot at ~44 px
    tall. After a heavy editing day users may have 30+ rows for
    one file. Group by day?
-7. **Conflict banner tone.** Currently very text-heavy. A lighter
-   banner with "Overwrite" as a destructive button and a link to
-   docs for the full rationale?
-8. **Empty-state imagery.** Today it's pure text. Would an
-   illustration of the cascade help comprehension?
+7. **Conflict banner tone.** _Answered (Soft Bento)._ The save
+   bar inverts to `bg-conflict` (`#7F1D1D`) when an
+   `Err("conflict:…")` surfaces — two-button resolution lives
+   on the bar itself, the long rationale moves to a HelpNote
+   beneath so the bar stays visually punchy.
+8. **Empty-state imagery.** _Answered (Soft Bento)._ Staying
+   pure text; the Welcome message lives in a soft white card
+   inside the cream canvas with ink-filled step markers. An
+   illustration would conflict with the system's restraint.
 
 ---
 
 ## 13. Change log
 
+- **2026-04-17** (Soft Bento): Seven phased commits port the full
+  design system — warm-paper palette, Geist/Inter/Playfair
+  typography, three radii + pill, single soft shadow, ink save
+  bar with conflict-red state, cream-over-white-over-ink
+  surfaces. New `src/components/ui/` primitives. Cascade
+  Overview gains amber-tinted "winning tier" highlight. Focus
+  ring decided. See `docs/design-system.md` for the mirror of
+  `ccsettings-ui.pen` frame `IT54D`.
 - **2026-04-16** (`9b4a617`): Inline syntax hints added to
   Permissions/Hooks/Env/Memory.
 - **2026-04-16** (`5ef9b35`): Welcome EmptyState + Discover panel
