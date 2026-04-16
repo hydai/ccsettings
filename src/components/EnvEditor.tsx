@@ -192,6 +192,18 @@ export function EnvEditor({ workspace }: Props) {
 
       {!loading && !layerFile?.parse_error && (
         <>
+          <p className="text-xs text-muted leading-snug p-3 border border-default rounded surface">
+            These variables are injected into Claude Code's shell tool calls
+            and a few internal flags. Examples:{" "}
+            <code className="font-mono">CLAUDE_CODE_SUBAGENT_MODEL=opus</code>{" "}
+            (override the model used by subagents),{" "}
+            <code className="font-mono">ANTHROPIC_API_KEY=…</code> (override
+            auth),{" "}
+            <code className="font-mono">EDITOR=code</code> (hook scripts see it).
+            Keys matching{" "}
+            <code className="font-mono">TOKEN | KEY | SECRET | PASSWORD | API</code>{" "}
+            are masked by default.
+          </p>
           {willCommitSecretToProjectTier && (
             <div className="border border-amber-500/30 bg-amber-500/5 rounded p-3 text-sm">
               <strong>Heads up:</strong> the Project tier is typically

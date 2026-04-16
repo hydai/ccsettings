@@ -211,10 +211,40 @@ export function HooksEditor({ workspace }: Props) {
 
       {!loading && !layerFile?.parse_error && (
         <>
-          <p className="text-xs text-muted">
-            Hooks run when Claude Code hits the matching event. Commands at the
-            same <code>event</code>+<code>matcher</code> are grouped on save.
-          </p>
+          <div className="text-xs text-muted space-y-1 p-3 border border-default rounded surface leading-snug">
+            <p>
+              Hooks run when Claude Code hits a matching event. Commands at
+              the same <code className="font-mono">event</code>+
+              <code className="font-mono">matcher</code> are grouped on save.
+            </p>
+            <p>
+              <strong>Events:</strong>{" "}
+              <code className="font-mono">PreToolUse</code> (before any tool
+              call, can block),{" "}
+              <code className="font-mono">PostToolUse</code> (after),{" "}
+              <code className="font-mono">UserPromptSubmit</code>,{" "}
+              <code className="font-mono">Stop</code> /{" "}
+              <code className="font-mono">SubagentStop</code>,{" "}
+              <code className="font-mono">SessionStart</code> /{" "}
+              <code className="font-mono">SessionEnd</code>,{" "}
+              <code className="font-mono">Notification</code>,{" "}
+              <code className="font-mono">PreCompact</code>.
+            </p>
+            <p>
+              <strong>Matcher:</strong> tool name pattern, e.g.{" "}
+              <code className="font-mono">Bash</code>,{" "}
+              <code className="font-mono">Write|Edit</code>, or empty to match
+              all tools.
+            </p>
+            <p>
+              <strong>Command:</strong> runs in <code className="font-mono">sh</code>.
+              During <code className="font-mono">PreToolUse</code>/
+              <code className="font-mono">PostToolUse</code>,{" "}
+              <code className="font-mono">$TOOL_INPUT</code> holds the tool's
+              JSON payload; a non-zero exit on{" "}
+              <code className="font-mono">PreToolUse</code> blocks the call.
+            </p>
+          </div>
 
           {rows.length === 0 ? (
             <div className="text-xs text-muted italic px-3 py-2 border border-dashed border-default rounded">

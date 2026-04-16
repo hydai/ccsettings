@@ -162,38 +162,55 @@ export function PermissionsEditor({ workspace }: Props) {
 
           <form
             onSubmit={addRule}
-            className="flex gap-2 items-center p-3 border border-default rounded surface"
+            className="p-3 border border-default rounded surface space-y-2"
           >
-            <select
-              value={newKind}
-              onChange={(e) => setNewKind(e.target.value as Kind)}
-              className="bg-transparent border border-default rounded px-2 py-1 text-sm"
-            >
-              {KINDS.map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={newRule}
-              onChange={(e) => setNewRule(e.target.value)}
-              placeholder="Bash(git *) or mcp__pencil or WebFetch(*)"
-              className="flex-1 bg-transparent border border-default rounded px-3 py-1 text-sm font-mono"
-            />
-            <button
-              type="submit"
-              disabled={!newRule.trim()}
-              className={cn(
-                "px-3 py-1 rounded text-sm border border-default",
-                !newRule.trim()
-                  ? "opacity-40 cursor-not-allowed"
-                  : "hover:bg-black/5 dark:hover:bg-white/5",
-              )}
-            >
-              Add
-            </button>
+            <div className="flex gap-2 items-center">
+              <select
+                value={newKind}
+                onChange={(e) => setNewKind(e.target.value as Kind)}
+                className="bg-transparent border border-default rounded px-2 py-1 text-sm"
+              >
+                {KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={newRule}
+                onChange={(e) => setNewRule(e.target.value)}
+                placeholder="Bash(git *) or mcp__pencil or WebFetch(*)"
+                className="flex-1 bg-transparent border border-default rounded px-3 py-1 text-sm font-mono"
+              />
+              <button
+                type="submit"
+                disabled={!newRule.trim()}
+                className={cn(
+                  "px-3 py-1 rounded text-sm border border-default",
+                  !newRule.trim()
+                    ? "opacity-40 cursor-not-allowed"
+                    : "hover:bg-black/5 dark:hover:bg-white/5",
+                )}
+              >
+                Add
+              </button>
+            </div>
+            <p className="text-xs text-muted leading-snug">
+              Syntax:{" "}
+              <code className="font-mono">Tool(args)</code> where Tool is a
+              built-in (<code className="font-mono">Bash</code>,{" "}
+              <code className="font-mono">Read</code>,{" "}
+              <code className="font-mono">Edit</code>,{" "}
+              <code className="font-mono">Write</code>,{" "}
+              <code className="font-mono">WebFetch</code>, …) or an MCP
+              (<code className="font-mono">mcp__&lt;name&gt;</code>).{" "}
+              <code className="font-mono">*</code> matches any args.{" "}
+              <code className="font-mono">allow</code> skips the prompt;{" "}
+              <code className="font-mono">deny</code> refuses unconditionally
+              (union across all tiers — fail-closed);{" "}
+              <code className="font-mono">ask</code> always prompts.
+            </p>
           </form>
 
           <SaveControls

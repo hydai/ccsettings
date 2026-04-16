@@ -165,6 +165,17 @@ export function MemoryEditor({ workspace }: Props) {
         )}
       </div>
 
+      <p className="text-xs text-muted leading-snug p-3 border border-default rounded surface">
+        Claude Code loads these markdown files into its context every turn
+        for this scope. Use them for durable instructions, repo conventions,
+        or project-specific glossary — things you'd otherwise paste into
+        every prompt.{" "}
+        <code className="font-mono">CLAUDE.md</code> is the primary file;{" "}
+        <code className="font-mono">AGENTS.md</code> /{" "}
+        <code className="font-mono">GEMINI.md</code> are cross-tool
+        equivalents for compatibility with other assistants.
+      </p>
+
       {loading && <p className="text-sm text-muted">Loading file…</p>}
       {!loading && file && !file.exists && (
         <div className="text-sm text-muted border border-dashed border-default rounded p-3">
