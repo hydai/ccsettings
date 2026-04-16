@@ -8,6 +8,7 @@ import { MemoryEditor } from "./MemoryEditor";
 import { ModelEditor } from "./ModelEditor";
 import { PermissionsEditor } from "./PermissionsEditor";
 import { PluginsEditor } from "./PluginsEditor";
+import { UnknownKeysPanel } from "./UnknownKeysPanel";
 
 type Props = {
   category: Category;
@@ -48,6 +49,7 @@ function Overview({ merged }: { merged: MergedView }) {
           {JSON.stringify(merged.value, null, 2)}
         </pre>
       </section>
+      <UnknownKeysPanel merged={merged} />
     </>
   );
 }
