@@ -6,6 +6,7 @@
 //! `Result<T, String>` is what serializes cleanly to the JS side.
 
 use crate::appconfig::{self, AppConfig, Workspace};
+use crate::backup::{self, BackupEntry};
 use crate::cascade::{self, MergedView};
 use crate::discovery::{self, DiscoveredProject};
 use crate::layers::{self, Layer, LayerContent, LayerKind};
@@ -500,6 +501,97 @@ pub fn save_memory_file(
         )),
         Err(e) => Err(e.to_string()),
     }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RestoreResult {
+    /// The source file path the backup was written back to.
+    pub path: String,
+    /// Hex SHA-256 of the newly-restored content.
+    pub new_hash: String,
+    /// Size of the restored content in bytes.
+    pub size_bytes: u64,
+}
+
+/// List backups captured for a specific settings tier in this workspace.
+/// Newest first. Empty list when no backups exist.
+#[tauri::command]
+pub fn list_backups_for_layer(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    layer: LayerKind,
+) -> Result<Vec<BackupEntry>, String> {
+    let workspace_path = workspace_path_for(&state, &workspace_id)?;
+    let path = resolve_layer_path(&workspace_path, layer)?;
+    backup::list_for_source(&path).map_err(|e| e.to_string())
+}
+
+/// List backups captured for a memory file (CLAUDE.md / AGENTS.md / GEMINI.md).
+#[tauri::command]
+pub fn list_backups_for_memory(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    scope: MemoryScope,
+    file: MemoryFile,
+) -> Result<Vec<BackupEntry>, String> {
+    let workspace_path = workspace_path_for(&state, &workspace_id)?;
+    let path = resolve_memory_path(&workspace_path, scope, file)?;
+    backup::list_for_source(&path).map_err(|e| e.to_string())
+}
+
+/// Restore a previously backed-up file. The target path is read from the
+/// backup directory's `source.txt`, so the caller only needs the backup id.
+/// `expected_hash` — if provided — guards against overwriting a file that has
+/// been modified externally since the UI loaded it; mismatch surfaces as a
+/// "conflict:" error. Pass `None` to force-overwrite (e.g., first-time restore
+/// into a file that was deleted out from under us).
+#[tauri::command]
+pub fn restore_backup(
+    backup_id: String,
+    expected_hash: Option<String>,
+) -> Result<RestoreResult, String> {
+    let backup_file = backup::resolve_entry_path(&backup_id).map_err(|e| e.to_string())?;
+    let source_txt = backup_file
+        .parent()
+        .ok_or_else(|| format!("backup file has no parent: {}", backup_file.display()))?
+        .join("source.txt");
+    let target: PathBuf = std::fs::read_to_string(&source_txt)
+        .map_err(|e| format!("read {}: {e}", source_txt.display()))?
+        .trim()
+        .into();
+    if target.as_os_str().is_empty() {
+        return Err(format!("empty source path in {}", source_txt.display()));
+    }
+
+    let bytes =
+        std::fs::read(&backup_file).map_err(|e| format!("read {}: {e}", backup_file.display()))?;
+
+    let expected = match expected_hash.as_deref() {
+        None => None,
+        Some(hex) => Some(from_hex(hex).ok_or_else(|| format!("invalid expected_hash: {hex}"))?),
+    };
+
+    match writers::atomic_write_if(&target, &bytes, expected) {
+        Ok(new_hash) => Ok(RestoreResult {
+            path: paths::display_path(&target),
+            new_hash: to_hex(&new_hash),
+            size_bytes: bytes.len() as u64,
+        }),
+        Err(writers::WriterError::HashMismatch { .. }) => Err(format!(
+            "conflict: {} changed since snapshot",
+            target.display()
+        )),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+fn workspace_path_for(state: &State<'_, AppState>, workspace_id: &str) -> Result<PathBuf, String> {
+    let cfg = state.config.lock().expect("config mutex poisoned");
+    Ok(cfg
+        .workspace(workspace_id)
+        .ok_or_else(|| format!("unknown workspace id: {workspace_id}"))?
+        .path
+        .clone())
 }
 
 fn resolve_memory_path(
