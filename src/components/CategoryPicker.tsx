@@ -1,14 +1,7 @@
 import { cn } from "../lib/cn";
 import { useUi, type Category } from "../state/ui";
 
-type Tab = {
-  id: Category;
-  label: string;
-  /** Categories landing in later phases are dimmed but still clickable. */
-  phase?: number;
-};
-
-const TABS: Tab[] = [
+const TABS: { id: Category; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "permissions", label: "Permissions" },
   { id: "env", label: "Env" },
@@ -16,7 +9,7 @@ const TABS: Tab[] = [
   { id: "memory", label: "Memory" },
   { id: "plugins", label: "Plugins" },
   { id: "hooks", label: "Hooks" },
-  { id: "mcp", label: "MCP", phase: 4 },
+  { id: "mcp", label: "MCP" },
 ];
 
 export function CategoryPicker() {
@@ -42,14 +35,6 @@ export function CategoryPicker() {
           )}
         >
           {t.label}
-          {t.phase && (
-            <span
-              className="ml-1.5 text-[10px] text-muted align-middle"
-              title={`Lands in phase ${t.phase}`}
-            >
-              v{t.phase}
-            </span>
-          )}
         </button>
       ))}
     </div>

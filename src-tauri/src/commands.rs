@@ -9,6 +9,7 @@ use crate::appconfig::{self, AppConfig, Workspace};
 use crate::cascade::{self, MergedView};
 use crate::discovery::{self, DiscoveredProject};
 use crate::layers::{self, Layer, LayerContent, LayerKind};
+use crate::mcp;
 use crate::paths::{self, WorkspacePaths};
 use crate::plugins::{self, InstalledPlugin};
 use crate::writers;
@@ -313,6 +314,82 @@ pub fn get_plugins_state(
         installed,
         per_tier,
     })
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct McpTierToggles {
+    pub enabled: Vec<String>,
+    pub disabled: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct McpStateDto {
+    /// `mcpServers` object from `~/.claude.json`. Read-only for v1.
+    pub user_servers: serde_json::Map<String, Value>,
+    /// Path to `~/.claude.json` (for display).
+    pub user_servers_path: String,
+    /// `mcpServers` object from `<project>/.mcp.json`.
+    pub project_servers: serde_json::Map<String, Value>,
+    /// Path to `<project>/.mcp.json` (for display; may not exist).
+    pub project_servers_path: String,
+    /// Per-settings-tier activation: layer kind (kebab-case) →
+    /// `{ enabled: [names...], disabled: [names...] }` when the tier sets
+    /// either array. Tiers that don't touch MCP activation are omitted.
+    pub per_tier: BTreeMap<String, McpTierToggles>,
+}
+
+/// Aggregate the MCP picture for a workspace: user-scope server defs,
+/// project-scope server defs, and per-tier activation lists.
+#[tauri::command]
+pub fn get_mcp_state(
+    state: State<'_, AppState>,
+    workspace_id: String,
+) -> Result<McpStateDto, String> {
+    let workspace_path = {
+        let cfg = state.config.lock().expect("config mutex poisoned");
+        cfg.workspace(&workspace_id)
+            .ok_or_else(|| format!("unknown workspace id: {workspace_id}"))?
+            .path
+            .clone()
+    };
+    let ws = WorkspacePaths::new(workspace_path.clone()).map_err(|e| e.to_string())?;
+
+    let user_servers = mcp::load_mcp_servers(&ws.user.claude_json).map_err(|e| e.to_string())?;
+    let project_servers = mcp::load_mcp_servers(&ws.project.mcp).map_err(|e| e.to_string())?;
+
+    let workspace_layers = load_workspace_layers(&workspace_path).map_err(|e| e.to_string())?;
+    let mut per_tier: BTreeMap<String, McpTierToggles> = BTreeMap::new();
+    for layer in &workspace_layers {
+        if let LayerContent::Parsed(v) = &layer.content {
+            let enabled = extract_string_array(v, "enabledMcpjsonServers");
+            let disabled = extract_string_array(v, "disabledMcpjsonServers");
+            if !enabled.is_empty() || !disabled.is_empty() {
+                per_tier.insert(
+                    layer.kind.as_str().to_string(),
+                    McpTierToggles { enabled, disabled },
+                );
+            }
+        }
+    }
+
+    Ok(McpStateDto {
+        user_servers,
+        user_servers_path: paths::display_path(&ws.user.claude_json),
+        project_servers,
+        project_servers_path: paths::display_path(&ws.project.mcp),
+        per_tier,
+    })
+}
+
+fn extract_string_array(root: &Value, key: &str) -> Vec<String> {
+    root.get(key)
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]

@@ -3,6 +3,7 @@ pub mod cascade;
 pub mod commands;
 pub mod discovery;
 pub mod layers;
+pub mod mcp;
 pub mod paths;
 pub mod plugins;
 pub mod writers;
@@ -31,6 +32,7 @@ pub fn run() {
             commands::read_memory_file,
             commands::save_memory_file,
             commands::get_plugins_state,
+            commands::get_mcp_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
