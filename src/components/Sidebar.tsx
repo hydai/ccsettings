@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
 import { useWorkspaces } from "../state/workspaces";
 import { DiscoverPanel } from "./DiscoverPanel";
+import { ThemeToggle } from "./ThemeToggle";
 import { Button, SectionLabel } from "./ui";
 
 export function Sidebar() {
@@ -117,6 +118,7 @@ export function Sidebar() {
           <Search className="w-4 h-4" />
           {showDiscover ? "Hide discovery" : "Discover from history"}
         </Button>
+        <ThemeToggle />
       </div>
     </aside>
   );

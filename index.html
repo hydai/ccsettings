@@ -11,6 +11,27 @@
       href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap"
       rel="stylesheet"
     />
+    <script>
+      // Resolve the active theme before React paints so the canvas never
+      // flashes the wrong colour. Mirrors src/state/theme.ts.
+      (function () {
+        try {
+          var saved = localStorage.getItem("ccsettings:theme");
+          var theme =
+            saved === "light" || saved === "dark"
+              ? saved
+              : window.matchMedia &&
+                  window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (e) {
+          // localStorage / matchMedia unavailable — stay in the default light.
+        }
+      })();
+    </script>
   </head>
 
   <body>

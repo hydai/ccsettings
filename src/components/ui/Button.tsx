@@ -19,12 +19,13 @@ const BASE =
   "focus-visible:shadow-focus-ink disabled:cursor-not-allowed";
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-ink text-card shadow-soft hover:bg-ink-alt disabled:opacity-30",
+  primary:
+    "bg-inverse text-on-inverse shadow-soft hover:bg-inverse-alt disabled:opacity-30",
   secondary:
     "bg-card text-ink border-[1.5px] border-ink hover:bg-canvas disabled:opacity-40",
   ghost: "bg-transparent text-ink hover:bg-canvas disabled:opacity-40",
   destructive:
-    "bg-card text-danger-soft border-[1.5px] border-danger hover:bg-danger hover:text-card disabled:opacity-40",
+    "bg-card text-danger-soft border-[1.5px] border-danger hover:bg-danger hover:text-on-inverse disabled:opacity-40",
 };
 
 const SIZE: Record<ButtonSize, string> = {
@@ -38,7 +39,7 @@ const ICON_ONLY_SIZE: Record<ButtonSize, string> = {
 };
 
 const SHORTCUT: Record<ButtonVariant, string> = {
-  primary: "bg-card/15 text-card/85",
+  primary: "bg-on-inverse/15 text-on-inverse/85",
   secondary: "bg-ink/10 text-ink/70",
   ghost: "bg-ink/10 text-ink/70",
   destructive: "bg-danger-soft/10 text-danger-soft/85",
