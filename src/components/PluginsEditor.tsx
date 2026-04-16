@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
-import { TIER_LABEL } from "../lib/layers";
+import { TIER_DOT, TIER_LABEL } from "../lib/layers";
 import { useCascade } from "../state/cascade";
 import {
   getLayerContent,
@@ -12,6 +12,7 @@ import type { LayerKind, Workspace } from "../types";
 import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
+import { Card } from "./ui";
 
 type InstalledPlugin = {
   key: string;
@@ -156,7 +157,6 @@ export function PluginsEditor({ workspace }: Props) {
       setSavedAt(Date.now());
       useCascade.getState().invalidate();
       await cascadeLoad(workspace.id);
-      // Re-fetch the plugins state too so per_tier reflects our write.
       const nextState = await invoke<PluginsState>("get_plugins_state", {
         workspaceId: workspace.id,
       });
@@ -169,7 +169,7 @@ export function PluginsEditor({ workspace }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <TierPicker
         value={target}
         onChange={setTarget}
@@ -177,65 +177,79 @@ export function PluginsEditor({ workspace }: Props) {
         name="plugins-tier"
       />
 
-      {loading && <p className="text-sm text-muted">Loading plugins…</p>}
+      {loading && (
+        <p className="font-body text-sm text-muted">Loading plugins…</p>
+      )}
       {layerFile?.parse_error && (
-        <div className="border border-red-500/30 bg-red-500/5 rounded p-3 text-sm text-red-500">
-          This tier's file could not be parsed: {layerFile.parse_error}.
-        </div>
+        <Card
+          variant="soft"
+          className="border-l-[3px] border-danger-soft p-4"
+        >
+          <p className="font-body text-sm text-danger-soft">
+            This tier&apos;s file could not be parsed: {layerFile.parse_error}.
+          </p>
+        </Card>
       )}
 
       {!loading && state && !layerFile?.parse_error && (
         <>
           {state.installed.length === 0 ? (
-            <div className="text-sm text-muted border border-dashed border-default rounded p-3">
-              No plugins installed. Claude Code tracks installs in{" "}
-              <span className="font-mono">
-                ~/.claude/plugins/installed_plugins.json
-              </span>
-              .
-            </div>
+            <Card variant="soft" className="p-5 text-center">
+              <p className="font-body text-sm text-muted">
+                No plugins installed. Claude Code tracks installs in{" "}
+                <span className="font-mono text-body">
+                  ~/.claude/plugins/installed_plugins.json
+                </span>
+                .
+              </p>
+            </Card>
           ) : (
-            <ul className="space-y-1">
+            <ul className="space-y-2">
               {state.installed.map((p) => {
                 const effective = computeEffective(state, p.key);
                 const draftValue = draft[p.key] ?? null;
                 return (
-                  <li
-                    key={p.key}
-                    className="flex items-center gap-3 p-3 border border-default rounded surface"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-mono text-sm truncate" title={p.key}>
-                        {p.name}
-                        <span className="text-muted">@{p.marketplace}</span>
-                      </div>
-                      <div className="text-xs text-muted flex gap-3 mt-0.5">
-                        {p.version && <span>v{p.version}</span>}
-                        {p.scope && <span>{p.scope}</span>}
-                      </div>
-                    </div>
+                  <li key={p.key}>
+                    <Card variant="soft" className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className="font-mono text-sm text-ink truncate"
+                            title={p.key}
+                          >
+                            {p.name}
+                            <span className="text-muted">@{p.marketplace}</span>
+                          </div>
+                          <div className="font-body text-xs text-muted flex gap-3 mt-0.5">
+                            {p.version && <span>v{p.version}</span>}
+                            {p.scope && <span>{p.scope}</span>}
+                          </div>
+                        </div>
 
-                    <EffectiveBadge effective={effective} />
+                        <EffectiveBadge effective={effective} />
 
-                    <button
-                      type="button"
-                      onClick={() => cycle(p.key)}
-                      className={cn(
-                        "w-28 px-3 py-1.5 rounded text-sm border border-default font-medium",
-                        draftValue === true
-                          ? "bg-green-600/20 text-green-700 dark:text-green-400"
-                          : draftValue === false
-                            ? "bg-red-600/20 text-red-700 dark:text-red-400"
-                            : "text-muted hover:bg-black/5 dark:hover:bg-white/5",
-                      )}
-                      title="Click to cycle: inherit → on → off → inherit"
-                    >
-                      {draftValue === true
-                        ? "On"
-                        : draftValue === false
-                          ? "Off"
-                          : "(inherit)"}
-                    </button>
+                        <button
+                          type="button"
+                          onClick={() => cycle(p.key)}
+                          className={cn(
+                            "w-28 rounded-full font-sans text-xs px-3.5 py-1.5 transition-colors",
+                            "focus:outline-none focus-visible:shadow-focus-ink",
+                            draftValue === true
+                              ? "bg-ink text-card font-semibold shadow-lift"
+                              : draftValue === false
+                                ? "bg-card border-[1.5px] border-ink text-ink font-semibold"
+                                : "bg-transparent border border-dashed border-hairline text-muted hover:bg-canvas",
+                          )}
+                          title="Click to cycle: inherit → on → off → inherit"
+                        >
+                          {draftValue === true
+                            ? "On"
+                            : draftValue === false
+                              ? "Off"
+                              : "inherit"}
+                        </button>
+                      </div>
+                    </Card>
                   </li>
                 );
               })}
@@ -284,22 +298,20 @@ function EffectiveBadge({
 }) {
   if (!effective) {
     return (
-      <span className="text-xs text-muted px-2 py-0.5 rounded border border-dashed border-default">
+      <span className="inline-flex items-center font-body text-[11px] text-muted italic">
         not set
       </span>
     );
   }
   return (
     <span
-      className={cn(
-        "text-xs px-2 py-0.5 rounded border",
-        effective.value
-          ? "border-green-500/30 text-green-700 dark:text-green-400"
-          : "border-red-500/30 text-red-700 dark:text-red-400",
-      )}
+      className="inline-flex items-center gap-1.5 font-body text-[11px] text-muted"
       title={`From ${TIER_LABEL[effective.source]}`}
     >
-      {effective.value ? "effective: on" : "effective: off"}
+      <span
+        className={cn("w-2 h-2 rounded-full", TIER_DOT[effective.source])}
+      />
+      effective: {effective.value ? "on" : "off"}
     </span>
   );
 }

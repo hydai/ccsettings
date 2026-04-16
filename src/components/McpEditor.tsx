@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
-import { TIER_LABEL } from "../lib/layers";
+import { TIER_DOT, TIER_LABEL } from "../lib/layers";
 import { useCascade } from "../state/cascade";
 import {
   getLayerContent,
@@ -12,6 +12,7 @@ import type { LayerKind, Workspace } from "../types";
 import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
+import { Card, HelpNote, SectionLabel } from "./ui";
 
 type McpTierToggles = { enabled: string[]; disabled: string[] };
 
@@ -39,15 +40,15 @@ function computeEffective(
   for (const layer of perTierLayerOrder()) {
     const t = state.per_tier[layer];
     if (!t) continue;
-    if (t.enabled.includes(name))
-      return { value: "enabled", source: layer };
-    if (t.disabled.includes(name))
-      return { value: "disabled", source: layer };
+    if (t.enabled.includes(name)) return { value: "enabled", source: layer };
+    if (t.disabled.includes(name)) return { value: "disabled", source: layer };
   }
   return null;
 }
 
-function draftFromTier(layerFile: LayerFile | null): Record<string, TargetValue> {
+function draftFromTier(
+  layerFile: LayerFile | null,
+): Record<string, TargetValue> {
   const c = layerFile?.content as Record<string, unknown> | null;
   const en = Array.isArray(c?.enabledMcpjsonServers)
     ? (c!.enabledMcpjsonServers as unknown[]).filter(
@@ -181,11 +182,18 @@ export function McpEditor({ workspace }: Props) {
         name="mcp-tier"
       />
 
-      {loading && <p className="text-sm text-muted">Loading MCP state…</p>}
+      {loading && (
+        <p className="font-body text-sm text-muted">Loading MCP state…</p>
+      )}
       {layerFile?.parse_error && (
-        <div className="border border-red-500/30 bg-red-500/5 rounded p-3 text-sm text-red-500">
-          This tier's file could not be parsed: {layerFile.parse_error}.
-        </div>
+        <Card
+          variant="soft"
+          className="border-l-[3px] border-danger-soft p-4"
+        >
+          <p className="font-body text-sm text-danger-soft">
+            This tier&apos;s file could not be parsed: {layerFile.parse_error}.
+          </p>
+        </Card>
       )}
 
       {!loading && state && !layerFile?.parse_error && (
@@ -234,14 +242,17 @@ export function McpEditor({ workspace }: Props) {
             }}
           />
 
-          <p className="text-xs text-muted">
-            Server definitions (command, args, URL, …) aren't editable from
-            ccsettings in v1 — edit <code>{state.project_servers_path}</code>{" "}
-            or Claude Code's own config directly. Toggles above only update
-            the <code>enabledMcpjsonServers</code> /{" "}
-            <code>disabledMcpjsonServers</code> arrays in the selected tier's{" "}
-            <code>settings.json</code>.
-          </p>
+          <HelpNote>
+            Server definitions (command, args, URL, …) aren&apos;t editable
+            from ccsettings in v1 — edit{" "}
+            <code className="font-mono">{state.project_servers_path}</code> or
+            Claude Code&apos;s own config directly. Toggles above only update
+            the{" "}
+            <code className="font-mono">enabledMcpjsonServers</code> /{" "}
+            <code className="font-mono">disabledMcpjsonServers</code> arrays in
+            the selected tier&apos;s{" "}
+            <code className="font-mono">settings.json</code>.
+          </HelpNote>
         </>
       )}
     </div>
@@ -266,57 +277,64 @@ function ServerGroup({
   const names = Object.keys(servers).sort();
   return (
     <section>
-      <div className="flex items-baseline justify-between mb-2">
-        <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
-          {title}
-        </h3>
-        <span className="text-xs text-muted font-mono truncate max-w-md" title={hint}>
+      <div className="flex items-baseline justify-between mb-2 gap-4">
+        <SectionLabel>{title}</SectionLabel>
+        <span
+          className="font-mono text-[11px] text-muted truncate max-w-md"
+          title={hint}
+        >
           {hint}
         </span>
       </div>
       {names.length === 0 ? (
-        <div className="text-xs text-muted italic px-3 py-2 border border-dashed border-default rounded">
-          none defined
-        </div>
+        <Card variant="soft" className="p-4 text-center">
+          <span className="font-body text-xs text-muted italic">
+            none defined
+          </span>
+        </Card>
       ) : (
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {names.map((name) => {
             const def = servers[name];
             const effective = computeEffective(state, name);
             const draftValue = draft[name] ?? null;
             return (
-              <li
-                key={name}
-                className="flex items-center gap-3 p-3 border border-default rounded surface"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="font-mono text-sm truncate">{name}</div>
-                  <div className="text-xs text-muted truncate">
-                    {describeServer(def)}
+              <li key={name}>
+                <Card variant="soft" className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono text-sm text-ink truncate">
+                        {name}
+                      </div>
+                      <div className="font-body text-xs text-muted truncate mt-0.5">
+                        {describeServer(def)}
+                      </div>
+                    </div>
+
+                    <EffectiveBadge effective={effective} />
+
+                    <button
+                      type="button"
+                      onClick={() => onCycle(name)}
+                      className={cn(
+                        "w-28 rounded-full font-sans text-xs px-3.5 py-1.5 transition-colors",
+                        "focus:outline-none focus-visible:shadow-focus-ink",
+                        draftValue === "enabled"
+                          ? "bg-ink text-card font-semibold shadow-lift"
+                          : draftValue === "disabled"
+                            ? "bg-card border-[1.5px] border-ink text-ink font-semibold"
+                            : "bg-transparent border border-dashed border-hairline text-muted hover:bg-canvas",
+                      )}
+                      title="Click to cycle: inherit → enabled → disabled → inherit"
+                    >
+                      {draftValue === "enabled"
+                        ? "Enabled"
+                        : draftValue === "disabled"
+                          ? "Disabled"
+                          : "inherit"}
+                    </button>
                   </div>
-                </div>
-
-                <EffectiveBadge effective={effective} />
-
-                <button
-                  type="button"
-                  onClick={() => onCycle(name)}
-                  className={cn(
-                    "w-28 px-3 py-1.5 rounded text-sm border border-default font-medium",
-                    draftValue === "enabled"
-                      ? "bg-green-600/20 text-green-700 dark:text-green-400"
-                      : draftValue === "disabled"
-                        ? "bg-red-600/20 text-red-700 dark:text-red-400"
-                        : "text-muted hover:bg-black/5 dark:hover:bg-white/5",
-                  )}
-                  title="Click to cycle: inherit → enabled → disabled → inherit"
-                >
-                  {draftValue === "enabled"
-                    ? "Enabled"
-                    : draftValue === "disabled"
-                      ? "Disabled"
-                      : "(inherit)"}
-                </button>
+                </Card>
               </li>
             );
           })}
@@ -333,21 +351,19 @@ function EffectiveBadge({
 }) {
   if (!effective) {
     return (
-      <span className="text-xs text-muted px-2 py-0.5 rounded border border-dashed border-default">
+      <span className="inline-flex items-center font-body text-[11px] text-muted italic">
         not set
       </span>
     );
   }
   return (
     <span
-      className={cn(
-        "text-xs px-2 py-0.5 rounded border",
-        effective.value === "enabled"
-          ? "border-green-500/30 text-green-700 dark:text-green-400"
-          : "border-red-500/30 text-red-700 dark:text-red-400",
-      )}
+      className="inline-flex items-center gap-1.5 font-body text-[11px] text-muted"
       title={`From ${TIER_LABEL[effective.source]}`}
     >
+      <span
+        className={cn("w-2 h-2 rounded-full", TIER_DOT[effective.source])}
+      />
       effective: {effective.value}
     </span>
   );
