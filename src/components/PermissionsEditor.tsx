@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
 import { TIER_LABEL } from "../lib/layers";
@@ -12,6 +13,7 @@ import type { LayerKind, Workspace } from "../types";
 import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
+import { Button, Card, HelpNote, Input, SectionLabel } from "./ui";
 
 type Kind = "allow" | "deny" | "ask";
 const KINDS: Kind[] = ["allow", "deny", "ask"];
@@ -141,12 +143,19 @@ export function PermissionsEditor({ workspace }: Props) {
         name="permissions-tier"
       />
 
-      {loading && <p className="text-sm text-muted">Loading tier…</p>}
+      {loading && (
+        <p className="font-body text-sm text-muted">Loading tier…</p>
+      )}
       {layerFile?.parse_error && (
-        <div className="border border-red-500/30 bg-red-500/5 rounded p-3 text-sm text-red-500">
-          This tier's file could not be parsed: {layerFile.parse_error}.
-          Editing is disabled until the file is fixed.
-        </div>
+        <Card
+          variant="soft"
+          className="border-l-[3px] border-danger-soft p-4"
+        >
+          <p className="font-body text-sm text-danger-soft">
+            This tier&apos;s file could not be parsed: {layerFile.parse_error}.
+            Editing is disabled until the file is fixed.
+          </p>
+        </Card>
       )}
 
       {!loading && !layerFile?.parse_error && (
@@ -160,15 +169,19 @@ export function PermissionsEditor({ workspace }: Props) {
             />
           ))}
 
-          <form
-            onSubmit={addRule}
-            className="p-3 border border-default rounded surface space-y-2"
-          >
-            <div className="flex gap-2 items-center">
+          <Card variant="cream" className="p-5 space-y-3">
+            <SectionLabel>Add rule</SectionLabel>
+            <form
+              onSubmit={addRule}
+              className="flex gap-2 items-center"
+            >
               <select
                 value={newKind}
                 onChange={(e) => setNewKind(e.target.value as Kind)}
-                className="bg-transparent border border-default rounded px-2 py-1 text-sm"
+                className={cn(
+                  "bg-card border border-hairline rounded-soft-sm px-3 py-3.5 text-sm font-sans text-ink",
+                  "focus:outline-none focus:border-[1.5px] focus:border-ink focus:shadow-focus-ink",
+                )}
               >
                 {KINDS.map((k) => (
                   <option key={k} value={k}>
@@ -176,42 +189,36 @@ export function PermissionsEditor({ workspace }: Props) {
                   </option>
                 ))}
               </select>
-              <input
+              <Input
                 type="text"
                 value={newRule}
                 onChange={(e) => setNewRule(e.target.value)}
                 placeholder="Bash(git *) or mcp__pencil or WebFetch(*)"
-                className="flex-1 bg-transparent border border-default rounded px-3 py-1 text-sm font-mono"
+                className="flex-1 font-mono"
               />
-              <button
+              <Button
                 type="submit"
+                variant="primary"
                 disabled={!newRule.trim()}
-                className={cn(
-                  "px-3 py-1 rounded text-sm border border-default",
-                  !newRule.trim()
-                    ? "opacity-40 cursor-not-allowed"
-                    : "hover:bg-black/5 dark:hover:bg-white/5",
-                )}
               >
                 Add
-              </button>
-            </div>
-            <p className="text-xs text-muted leading-snug">
-              Syntax:{" "}
-              <code className="font-mono">Tool(args)</code> where Tool is a
-              built-in (<code className="font-mono">Bash</code>,{" "}
+              </Button>
+            </form>
+            <HelpNote>
+              Syntax: <code className="font-mono">Tool(args)</code> where Tool
+              is a built-in (<code className="font-mono">Bash</code>,{" "}
               <code className="font-mono">Read</code>,{" "}
               <code className="font-mono">Edit</code>,{" "}
               <code className="font-mono">Write</code>,{" "}
-              <code className="font-mono">WebFetch</code>, …) or an MCP
-              (<code className="font-mono">mcp__&lt;name&gt;</code>).{" "}
+              <code className="font-mono">WebFetch</code>, …) or an MCP (
+              <code className="font-mono">mcp__&lt;name&gt;</code>).{" "}
               <code className="font-mono">*</code> matches any args.{" "}
               <code className="font-mono">allow</code> skips the prompt;{" "}
               <code className="font-mono">deny</code> refuses unconditionally
               (union across all tiers — fail-closed);{" "}
               <code className="font-mono">ask</code> always prompts.
-            </p>
-          </form>
+            </HelpNote>
+          </Card>
 
           <SaveControls
             dirty={dirty}
@@ -256,36 +263,39 @@ function RuleList({
   return (
     <section>
       <div className="flex items-baseline justify-between mb-2">
-        <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
-          {kind}
-        </h3>
-        <span className="text-xs text-muted">{rules.length}</span>
+        <SectionLabel>{kind}</SectionLabel>
+        <span className="font-body text-xs text-muted">{rules.length}</span>
       </div>
       {rules.length === 0 ? (
-        <div className="text-xs text-muted italic px-3 py-2 border border-dashed border-default rounded">
-          empty
-        </div>
+        <Card variant="soft" className="p-4 text-center">
+          <span className="font-body text-xs text-muted italic">empty</span>
+        </Card>
       ) : (
-        <ul className="space-y-1">
-          {rules.map((rule, i) => (
-            <li
-              key={`${rule}-${i}`}
-              className="flex items-center gap-2 px-3 py-1.5 border border-default rounded surface"
-            >
-              <span className="flex-1 text-sm font-mono truncate" title={rule}>
-                {rule}
-              </span>
-              <button
-                type="button"
-                onClick={() => onRemove(i)}
-                aria-label={`Remove ${rule}`}
-                className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-500/10 text-muted hover:text-red-500"
+        <Card variant="soft" className="overflow-hidden">
+          <ul className="divide-y divide-hairline">
+            {rules.map((rule, i) => (
+              <li
+                key={`${rule}-${i}`}
+                className="flex items-center gap-2 px-4 py-2.5"
               >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
+                <span
+                  className="flex-1 font-mono text-sm text-ink truncate"
+                  title={rule}
+                >
+                  {rule}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onRemove(i)}
+                  aria-label={`Remove ${rule}`}
+                  className="w-7 h-7 flex items-center justify-center rounded-full text-muted hover:bg-danger-soft/10 hover:text-danger-soft transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
     </section>
   );

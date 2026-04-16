@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { cn } from "../lib/cn";
 import { TIER_LABEL } from "../lib/layers";
 import { useCascade } from "../state/cascade";
 import {
@@ -13,6 +12,7 @@ import type { LayerKind, Workspace } from "../types";
 import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
+import { Button, Card, HelpNote, Input, SectionLabel } from "./ui";
 
 type Entry = { key: string; value: string };
 
@@ -138,7 +138,6 @@ export function EnvEditor({ workspace }: Props) {
   }
 
   async function save(force = false) {
-    // Duplicate-key guard: build a map; last wins, warn the user once.
     const seen = new Set<string>();
     for (const e of entries) {
       const k = e.key.trim();
@@ -183,118 +182,143 @@ export function EnvEditor({ workspace }: Props) {
         name="env-tier"
       />
 
-      {loading && <p className="text-sm text-muted">Loading tier…</p>}
+      {loading && (
+        <p className="font-body text-sm text-muted">Loading tier…</p>
+      )}
       {layerFile?.parse_error && (
-        <div className="border border-red-500/30 bg-red-500/5 rounded p-3 text-sm text-red-500">
-          This tier's file could not be parsed: {layerFile.parse_error}.
-        </div>
+        <Card
+          variant="soft"
+          className="border-l-[3px] border-danger-soft p-4"
+        >
+          <p className="font-body text-sm text-danger-soft">
+            This tier&apos;s file could not be parsed: {layerFile.parse_error}.
+          </p>
+        </Card>
       )}
 
       {!loading && !layerFile?.parse_error && (
         <>
-          <p className="text-xs text-muted leading-snug p-3 border border-default rounded surface">
-            These variables are injected into Claude Code's shell tool calls
-            and a few internal flags. Examples:{" "}
-            <code className="font-mono">CLAUDE_CODE_SUBAGENT_MODEL=opus</code>{" "}
-            (override the model used by subagents),{" "}
-            <code className="font-mono">ANTHROPIC_API_KEY=…</code> (override
-            auth),{" "}
-            <code className="font-mono">EDITOR=code</code> (hook scripts see it).
-            Keys matching{" "}
-            <code className="font-mono">TOKEN | KEY | SECRET | PASSWORD | API</code>{" "}
-            are masked by default.
-          </p>
-          {willCommitSecretToProjectTier && (
-            <div className="border border-amber-500/30 bg-amber-500/5 rounded p-3 text-sm">
-              <strong>Heads up:</strong> the Project tier is typically
-              committed to git. Secrets (keys matching{" "}
+          <Card variant="cream" className="p-5">
+            <HelpNote>
+              These variables are injected into Claude Code&apos;s shell tool
+              calls and a few internal flags. Examples:{" "}
               <code className="font-mono">
-                TOKEN|KEY|SECRET|PASSWORD|API
-              </code>
-              ) should live in Project Local or User Local instead.
-            </div>
+                CLAUDE_CODE_SUBAGENT_MODEL=opus
+              </code>{" "}
+              (override the model used by subagents),{" "}
+              <code className="font-mono">ANTHROPIC_API_KEY=…</code> (override
+              auth),{" "}
+              <code className="font-mono">EDITOR=code</code> (hook scripts see
+              it). Keys matching{" "}
+              <code className="font-mono">
+                TOKEN | KEY | SECRET | PASSWORD | API
+              </code>{" "}
+              are masked by default.
+            </HelpNote>
+          </Card>
+
+          {willCommitSecretToProjectTier && (
+            <Card
+              variant="soft"
+              className="border-l-[3px] border-amber-500 p-4"
+            >
+              <p className="font-body text-sm text-body">
+                <strong className="font-semibold text-ink">Heads up:</strong>{" "}
+                the Project tier is typically committed to git. Secrets (keys
+                matching{" "}
+                <code className="font-mono">
+                  TOKEN|KEY|SECRET|PASSWORD|API
+                </code>
+                ) should live in Project Local or User Local instead.
+              </p>
+            </Card>
           )}
 
           <section>
             <div className="flex items-baseline justify-between mb-2">
-              <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
-                Environment variables
-              </h3>
-              <span className="text-xs text-muted">{entries.length}</span>
+              <SectionLabel>Environment variables</SectionLabel>
+              <span className="font-body text-xs text-muted">
+                {entries.length}
+              </span>
             </div>
             {entries.length === 0 ? (
-              <div className="text-xs text-muted italic px-3 py-2 border border-dashed border-default rounded">
-                no variables at this tier
-              </div>
+              <Card variant="soft" className="p-4 text-center">
+                <span className="font-body text-xs text-muted italic">
+                  no variables at this tier
+                </span>
+              </Card>
             ) : (
-              <ul className="space-y-1">
-                {entries.map((entry, i) => {
-                  const secret = isSecretKey(entry.key);
-                  const shouldMask = secret && !revealed.has(i);
-                  return (
-                    <li
-                      key={i}
-                      className="flex items-center gap-2 px-2 py-1.5 border border-default rounded surface"
-                    >
-                      <input
-                        type="text"
-                        value={entry.key}
-                        onChange={(e) => updateKey(i, e.target.value)}
-                        placeholder="KEY"
-                        className="w-56 bg-transparent border border-default rounded px-2 py-1 text-sm font-mono"
-                      />
-                      <input
-                        type={shouldMask ? "password" : "text"}
-                        value={entry.value}
-                        onChange={(e) => updateValue(i, e.target.value)}
-                        placeholder="value"
-                        className="flex-1 bg-transparent border border-default rounded px-2 py-1 text-sm font-mono"
-                      />
-                      {secret && (
+              <Card variant="soft" className="overflow-hidden">
+                <ul className="divide-y divide-hairline">
+                  {entries.map((entry, i) => {
+                    const secret = isSecretKey(entry.key);
+                    const shouldMask = secret && !revealed.has(i);
+                    return (
+                      <li
+                        key={i}
+                        className="flex items-center gap-3 px-4 py-3"
+                      >
+                        <Input
+                          type="text"
+                          value={entry.key}
+                          onChange={(e) => updateKey(i, e.target.value)}
+                          placeholder="KEY"
+                          className="w-56 font-mono !py-2.5"
+                        />
+                        <span className="font-mono text-muted text-sm">=</span>
+                        <Input
+                          type={shouldMask ? "password" : "text"}
+                          value={entry.value}
+                          onChange={(e) => updateValue(i, e.target.value)}
+                          placeholder="value"
+                          className="flex-1 font-mono !py-2.5"
+                        />
+                        {secret && (
+                          <button
+                            type="button"
+                            onClick={() => toggleReveal(i)}
+                            aria-label={
+                              revealed.has(i) ? "Hide value" : "Reveal value"
+                            }
+                            className="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:bg-canvas hover:text-ink transition-colors"
+                            title={
+                              revealed.has(i)
+                                ? "Hide (unmasked while you edit)"
+                                : "Value is masked because the key looks like a secret"
+                            }
+                          >
+                            {revealed.has(i) ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => toggleReveal(i)}
-                          aria-label={
-                            revealed.has(i) ? "Hide value" : "Reveal value"
-                          }
-                          className="w-8 h-8 flex items-center justify-center rounded text-muted hover:bg-black/5 dark:hover:bg-white/5"
-                          title={
-                            revealed.has(i)
-                              ? "Hide (value is unmasked while you edit)"
-                              : "Value is masked because the key looks like a secret"
-                          }
+                          onClick={() => removeRow(i)}
+                          aria-label={`Remove ${entry.key || "entry"}`}
+                          className="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:bg-danger-soft/10 hover:text-danger-soft transition-colors"
                         >
-                          {revealed.has(i) ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
+                          <X className="w-4 h-4" />
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeRow(i)}
-                        aria-label={`Remove ${entry.key || "entry"}`}
-                        className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-500/10 text-muted hover:text-red-500"
-                      >
-                        ×
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Card>
             )}
 
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={addRow}
-              className={cn(
-                "mt-2 px-3 py-1 rounded text-sm border border-dashed border-default",
-                "hover:bg-black/5 dark:hover:bg-white/5",
-              )}
+              className="mt-3"
             >
-              + Add variable
-            </button>
+              <Plus className="w-3.5 h-3.5" />
+              Add variable
+            </Button>
           </section>
 
           <SaveControls
