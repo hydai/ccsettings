@@ -247,7 +247,7 @@ function PillGroup<T extends string>({
                 "focus:outline-none focus-visible:shadow-focus-ink",
                 o.mono ? "font-mono" : "font-sans",
                 selected
-                  ? "bg-ink text-card font-semibold"
+                  ? "bg-inverse text-on-inverse font-semibold"
                   : "bg-card border border-hairline text-ink font-medium hover:bg-canvas",
               )}
             >

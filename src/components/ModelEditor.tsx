@@ -406,7 +406,7 @@ function BoolField({
                 "flex-1 rounded-full font-sans text-sm font-medium px-4 py-2.5 transition-colors",
                 "focus:outline-none focus-visible:shadow-focus-ink",
                 selected
-                  ? "bg-ink text-card shadow-lift font-semibold"
+                  ? "bg-inverse text-on-inverse shadow-lift font-semibold"
                   : "bg-card border border-hairline text-ink hover:bg-canvas",
               )}
             >

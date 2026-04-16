@@ -143,33 +143,48 @@ collapse on short windows.
 
 ## 5. Design tokens
 
-All tokens live in `src/styles.css` (CSS variables) and
-`tailwind.config.ts` (Tailwind `theme.extend`). The app ships light-only
-for v1; a dark variant is planned (the `:root.dark` hook is reserved).
+All tokens live in `src/styles.css` (RGB-tuple CSS variables) and
+`tailwind.config.ts` (Tailwind `theme.extend` via
+`rgb(var(--x-rgb) / <alpha-value>)` so Tailwind's alpha modifier keeps
+working across themes). The app ships **both light and dark** — see
+§5.8 for the toggle UX.
 
 ### 5.1 Color — surface tokens
 
-| Token | CSS var | Hex | Used for |
+| Token | Light | Dark | Used for |
 |---|---|---|---|
-| canvas | `--canvas` | `#F3EBE2` | Cream app background; inline form cards; input fill |
-| pad | `--pad` | `#C5BEB6` | Taupe "bento" section wrappers |
-| card | `--card` | `#FFFFFF` | Elevated white cards, list items |
-| ink | `--ink` | `#1A1A1A` | Primary text, primary CTA fill, save bar, inverse surfaces |
-| ink-alt | `--ink-alt` | `#2D2926` | Dark inverse accent (hero tile, alt primaries) |
-| body | `--body` | `#3D3D3D` | Body copy |
-| muted | `--muted` | `#6B6B6B` | Secondary / help copy |
-| caption | `--caption` | `#8C8782` | Section labels (`§ 01 —`) |
-| accent | `--accent` | `#7D6B3D` | Olive accent — swatch rows, soft info pills |
-| conflict | `--conflict` | `#7F1D1D` | Save bar CONFLICT-state fill |
-| danger | — | `#B23A3A` | Destructive button outline |
-| danger-soft | — | `#B4301F` | Input error outline + error help copy |
-| hairline | `--hairline` | `#0000001f` | 1 px card/input strokes (12% alpha black) |
-| focus-shadow | `--focus-shadow` | `#1a1a1a14` | Input focus spread shadow |
+| canvas | `#F3EBE2` | `#14110F` | App background |
+| pad | `#C5BEB6` | `#1F1B17` | Section wrappers (bento pads) |
+| card | `#FFFFFF` | `#28221E` | Elevated content cards |
+| card-cream | `#F3EBE2` | `#3A332D` | Inline form cards (tier picker, env, forms) |
+| inverse *(mode-stable)* | `#1A1A1A` | `#0D0B0A` | Save bar, primary button, active pill — stays dark in both modes |
+| inverse-alt *(mode-stable)* | `#2D2926` | `#4A423B` | Primary-button hover |
+| on-inverse *(mode-stable)* | `#FFFFFF` | `#F3EBE2` | Text / light chip on `inverse` surfaces |
+| ink | `#1A1A1A` | `#F3EBE2` | Primary text |
+| body | `#3D3D3D` | `#C5BEB6` | Body copy |
+| muted | `#6B6B6B` | `#A59B91` | Secondary / help copy |
+| caption | `#8C8782` | `#8A7F75` | Section labels (`§ 01 —`) |
+| accent | `#7D6B3D` | `#7D6B3D` | Olive accent — same both modes |
+| conflict | `#7F1D1D` | `#7F1D1D` | Save bar CONFLICT state — same both modes |
+| danger | `#B23A3A` | `#B23A3A` | Destructive button outline |
+| danger-soft | `#B4301F` | `#B4301F` | Input error outline + error help copy |
+| hairline | `#0000001f` | `#FFFFFF14` | 1 px card/input strokes |
+| shadow-soft | `0 1px 2px #0000000a` | `0 2px 6px #00000066` | The one elevation |
+| shadow-lift | `0 2px 8px #1a1a1a33` | `0 2px 8px #00000099` | Active tier pill |
+| focus-shadow | `0 0 0 3px #1a1a1a14` | `0 0 0 3px #f3ebe214` | Input focus |
+
+**Key split — `ink` vs `inverse`.** `ink` is the *text* token and flips
+from near-black to cream between modes. `inverse` is the *surface*
+token and stays near-black in both modes (the save bar, primary CTAs,
+active tier pills are meant to be dark against a cream OR dark canvas
+— the "things that matter most" principle from the .pen cover). The
+`bg-ink text-card` pattern from the light-only pass was rewritten to
+`bg-inverse text-on-inverse` everywhere to make this explicit.
 
 Exposed to components as Tailwind utilities: `bg-canvas`, `bg-pad`,
-`bg-card`, `text-ink`, `text-body`, `text-muted`, `text-caption`,
-`border-hairline`, etc. Legacy utilities `.surface`, `.border-default`,
-`.text-muted` from the pre-Soft-Bento design still resolve via CSS vars.
+`bg-card`, `bg-card-cream`, `bg-inverse`, `bg-inverse-alt`,
+`text-on-inverse`, `text-ink`, `text-body`, `text-muted`,
+`text-caption`, `border-hairline`, etc.
 
 ### 5.2 Color — layer (tier) palette
 
@@ -266,12 +281,19 @@ Stroke width: `border` (1 px) with `border-hairline`. Focus inputs use
 a 1.5 px `border-ink` plus a 3 px spread `shadow-focus-ink`. Error
 inputs use a 1.5 px `border-danger-soft`.
 
-### 5.8 Design system
+### 5.8 Design system & theme toggle
 
-Named system: **Soft Bento**. Canonical source is the Pencil file
-`ccsettings-ui.pen` (frame `IT54D`). The text mirror for implementers
-who can't open Pencil will live in `docs/design-system.md` (added in
-Phase 6). Principles, quoted from the design cover:
+Named system: **Soft Bento**, shipped in both light (.pen frame
+`IT54D`) and dark (.pen frame `syE1K`) variants. Theme is controlled
+by a `ThemeToggle` component rendered as the last row in the sidebar
+footer (Sun / Moon icon, 2-state toggle). First run honours the OS
+via `prefers-color-scheme`. Subsequent runs restore the persisted
+choice from `localStorage["ccsettings:theme"]`. A pre-React inline
+script in `index.html` applies the `.dark` class before CSS paints to
+prevent theme flash. The text mirror for implementers who can't open
+Pencil lives in `docs/design-system.md`.
+
+Principles, quoted from the design cover:
 
 > Two surfaces, three radii, one shadow. Everything else is restraint —
 > a paper-warm canvas, a taupe bento that holds soft white cards, and
@@ -1038,11 +1060,11 @@ items remain listed for traceability.
    wide-table categories (MCP with long command lines, Overview's
    merged JSON). Should the cap be a user preference? Category-
    specific? Dropped entirely?
-2. **Light vs dark.** _Answered (Soft Bento)._ Light-only for v1
-   — the Soft Bento palette is a warm-paper single theme with
-   dark `#1A1A1A` reserved for inverse accents (save bar,
-   primary CTAs). The `:root.dark` hook remains for a future
-   dark-mode pass; no dark tokens are defined today.
+2. **Light vs dark.** _Answered (Soft Bento dark)._ Both themes
+   ship. The toggle lives as the last row in the sidebar footer.
+   First-run default = OS `prefers-color-scheme`. User choice
+   persists to `localStorage["ccsettings:theme"]`. See §5.8 and
+   `docs/design-system.md`.
 3. **Category label alias.** "Env" is techy; users called it
    "Environment variables" in some tests. We currently use the
    short name as the tab and the long name as the section title.
@@ -1074,6 +1096,13 @@ items remain listed for traceability.
 
 ## 13. Change log
 
+- **2026-04-17** (Soft Bento dark): Dark mode tokens (pen frame
+  `syE1K`), zustand theme store, ThemeToggle in sidebar footer.
+  Introduces mode-stable `inverse` / `on-inverse` / `inverse-alt`
+  tokens so the save bar + primary CTAs stay near-black in both
+  modes while body text flips cream-in-dark. Every `bg-ink text-card`
+  call site refactored to `bg-inverse text-on-inverse`. Amber
+  warnings gain `dark:amber-400` variants for contrast.
 - **2026-04-17** (Soft Bento): Seven phased commits port the full
   design system — warm-paper palette, Geist/Inter/Playfair
   typography, three radii + pill, single soft shadow, ink save

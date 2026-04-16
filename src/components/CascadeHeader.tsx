@@ -119,8 +119,8 @@ export function CascadeHeader({ merged }: { merged: MergedView }) {
               className={cn(
                 "rounded-soft-md p-5 min-h-[9rem] transition-colors",
                 highlighted
-                  ? "bg-[#F59E0B14] border-[1.5px] border-amber-500"
-                  : "bg-canvas",
+                  ? "bg-amber-500/10 dark:bg-amber-400/15 border-[1.5px] border-amber-500 dark:border-amber-400"
+                  : "bg-card-cream",
               )}
             >
               <div className="flex items-center gap-2">

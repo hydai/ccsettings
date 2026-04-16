@@ -33,7 +33,7 @@ export function CategoryPicker() {
               "px-4 py-1.5 rounded-full font-sans text-sm font-medium transition-colors",
               "focus:outline-none focus-visible:shadow-focus-ink",
               active
-                ? "bg-ink text-card shadow-soft"
+                ? "bg-inverse text-on-inverse shadow-soft"
                 : "text-muted hover:text-ink",
             )}
           >

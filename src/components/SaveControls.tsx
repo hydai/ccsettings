@@ -33,7 +33,7 @@ export function SaveControls({
         <div
           className={cn(
             "h-16 rounded-soft-md flex items-center justify-between gap-4",
-            "pl-6 pr-5 bg-conflict text-card",
+            "pl-6 pr-5 bg-conflict text-on-inverse",
           )}
         >
           <span className="font-sans text-sm font-semibold">
@@ -46,7 +46,7 @@ export function SaveControls({
               disabled={saving}
               className={cn(
                 "rounded-full font-sans text-xs font-medium px-3.5 py-1.5",
-                "bg-card/15 text-card hover:bg-card/25 transition-colors",
+                "bg-on-inverse/15 text-on-inverse hover:bg-on-inverse/25 transition-colors",
                 "disabled:opacity-40 disabled:cursor-not-allowed",
                 "focus:outline-none focus-visible:shadow-focus-ink",
               )}
@@ -60,7 +60,7 @@ export function SaveControls({
                 disabled={saving}
                 className={cn(
                   "rounded-full font-sans text-xs font-semibold px-4 py-1.5",
-                  "bg-card text-conflict hover:bg-canvas transition-colors",
+                  "bg-on-inverse text-conflict hover:bg-on-inverse/90 transition-colors",
                   "disabled:opacity-40 disabled:cursor-not-allowed",
                   "focus:outline-none focus-visible:shadow-focus-ink",
                 )}
@@ -84,28 +84,33 @@ export function SaveControls({
       <div
         className={cn(
           "h-16 rounded-soft-md flex items-center justify-between gap-4",
-          "pl-6 pr-5 bg-ink text-card",
+          "pl-6 pr-5 bg-inverse text-on-inverse",
         )}
       >
         <div className="flex items-center gap-3 min-w-0">
           {saving ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-card/70" />
-              <span className="font-sans text-sm text-card/80">Saving…</span>
+              <Loader2 className="w-4 h-4 animate-spin text-on-inverse/70" />
+              <span className="font-sans text-sm text-on-inverse/80">
+                Saving…
+              </span>
             </>
           ) : dirty ? (
-            <span className="font-sans text-sm text-card/80">
+            <span className="font-sans text-sm text-on-inverse/80">
               Unsaved changes
             </span>
           ) : savedAt ? (
             <>
-              <Check className="w-4 h-4 text-card/70" strokeWidth={2.5} />
-              <span className="font-mono text-[11px] text-card/70">
+              <Check
+                className="w-4 h-4 text-on-inverse/70"
+                strokeWidth={2.5}
+              />
+              <span className="font-mono text-[11px] text-on-inverse/70">
                 Saved at {new Date(savedAt).toLocaleTimeString()}
               </span>
             </>
           ) : (
-            <span className="font-mono text-[11px] text-card/50">
+            <span className="font-mono text-[11px] text-on-inverse/50">
               Ready to edit
             </span>
           )}
@@ -120,8 +125,8 @@ export function SaveControls({
               "rounded-full font-sans text-xs font-medium px-3.5 py-1.5 transition-colors",
               "focus:outline-none focus-visible:shadow-focus-ink",
               dirty && !saving
-                ? "bg-card/10 text-card hover:bg-card/20"
-                : "text-card/30 cursor-not-allowed",
+                ? "bg-on-inverse/10 text-on-inverse hover:bg-on-inverse/20"
+                : "text-on-inverse/30 cursor-not-allowed",
             )}
           >
             Discard
@@ -135,13 +140,13 @@ export function SaveControls({
               "transition-colors",
               "focus:outline-none focus-visible:shadow-focus-ink",
               dirty && !saving
-                ? "bg-card text-ink hover:bg-canvas"
-                : "bg-card/20 text-card/40 cursor-not-allowed",
+                ? "bg-on-inverse text-inverse hover:bg-on-inverse/90"
+                : "bg-on-inverse/20 text-on-inverse/40 cursor-not-allowed",
             )}
           >
             {saving ? "Saving…" : saveLabel}
             {dirty && !saving && (
-              <span className="font-mono text-[10px] tracking-wider bg-ink/10 text-ink/70 rounded-full px-1.5 py-0.5">
+              <span className="font-mono text-[10px] tracking-wider bg-inverse/10 text-inverse/70 rounded-full px-1.5 py-0.5">
                 ⌘S
               </span>
             )}

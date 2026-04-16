@@ -320,7 +320,7 @@ function ServerGroup({
                         "w-28 rounded-full font-sans text-xs px-3.5 py-1.5 transition-colors",
                         "focus:outline-none focus-visible:shadow-focus-ink",
                         draftValue === "enabled"
-                          ? "bg-ink text-card font-semibold shadow-lift"
+                          ? "bg-inverse text-on-inverse font-semibold shadow-lift"
                           : draftValue === "disabled"
                             ? "bg-card border-[1.5px] border-ink text-ink font-semibold"
                             : "bg-transparent border border-dashed border-hairline text-muted hover:bg-canvas",

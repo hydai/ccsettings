@@ -220,7 +220,7 @@ export function EnvEditor({ workspace }: Props) {
           {willCommitSecretToProjectTier && (
             <Card
               variant="soft"
-              className="border-l-[3px] border-amber-500 p-4"
+              className="border-l-[3px] border-amber-500 dark:border-amber-400 p-4"
             >
               <p className="font-body text-sm text-body">
                 <strong className="font-semibold text-ink">Heads up:</strong>{" "}

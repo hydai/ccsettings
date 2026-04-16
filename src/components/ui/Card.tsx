@@ -10,8 +10,8 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 const VARIANT: Record<CardVariant, string> = {
   soft: "bg-card shadow-soft rounded-soft-md",
   pad: "bg-pad rounded-soft-lg",
-  inverse: "bg-ink text-card rounded-soft-md",
-  cream: "bg-canvas shadow-soft rounded-soft-lg",
+  inverse: "bg-inverse text-on-inverse rounded-soft-md",
+  cream: "bg-card-cream shadow-soft rounded-soft-lg",
 };
 
 export function Card({

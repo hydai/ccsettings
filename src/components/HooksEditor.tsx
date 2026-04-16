@@ -458,8 +458,8 @@ function HookRow({
           className="font-mono resize-y"
         />
         {flags.length > 0 && (
-          <div className="flex items-start gap-2 rounded-soft-sm bg-amber-500/10 border border-amber-500/40 px-3 py-2">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
+          <div className="flex items-start gap-2 rounded-soft-sm bg-amber-500/10 dark:bg-amber-400/15 border border-amber-500/40 dark:border-amber-400/40 px-3 py-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-300" />
             <p className="font-body text-xs text-body leading-[1.5]">
               <span className="font-semibold text-ink">Heads up:</span> command
               contains {flags.join(", ")}. Make sure this is intentional.

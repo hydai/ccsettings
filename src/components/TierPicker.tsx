@@ -50,7 +50,7 @@ export function TierPicker({
                 "inline-flex items-center gap-2.5 rounded-full cursor-pointer transition-colors",
                 "font-body text-[13px] px-[18px] py-2.5",
                 active
-                  ? "bg-ink text-card font-semibold shadow-lift"
+                  ? "bg-inverse text-on-inverse font-semibold shadow-lift"
                   : "bg-card border border-hairline text-ink font-medium hover:bg-canvas",
               )}
             >
@@ -66,7 +66,7 @@ export function TierPicker({
               <span
                 className={cn(
                   "text-xs hidden lg:inline",
-                  active ? "text-card/70" : "text-muted",
+                  active ? "text-on-inverse/70" : "text-muted",
                 )}
               >
                 · {TIER_SUBTITLE[t]}

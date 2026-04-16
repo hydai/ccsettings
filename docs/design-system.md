@@ -179,7 +179,53 @@ design spec for each component.
 | Diff viewer | `yurnB` | Diff viewer |
 | Empty states | `JOJ4Q` | Empty states |
 
-## 5. Working with Pencil
+## 5. Dark mode
+
+Dark mode ships alongside light. Canonical source:
+`ccsettings-ui.pen` frame `syE1K` (mirror of `IT54D` with inverted
+warmth). The palette follows the same surface ladder as light, just
+going dark-to-light instead of light-to-dark:
+
+| Token | Light | Dark |
+|---|---|---|
+| `canvas` | `#F3EBE2` | `#14110F` |
+| `pad` | `#C5BEB6` | `#1F1B17` |
+| `card` | `#FFFFFF` | `#28221E` |
+| `card-cream` | `#F3EBE2` | `#3A332D` |
+| `ink` (text) | `#1A1A1A` | `#F3EBE2` |
+| `body` | `#3D3D3D` | `#C5BEB6` |
+| `muted` | `#6B6B6B` | `#A59B91` |
+| `caption` | `#8C8782` | `#8A7F75` |
+| `hairline` | `#0000001f` | `#FFFFFF14` |
+
+**Mode-stable** (same both modes — these carry the "darkest attention"
+semantics regardless of theme):
+
+| Token | Value | Role |
+|---|---|---|
+| `inverse` | `#1A1A1A` / `#0D0B0A` | Save bar, primary CTA, active pill |
+| `inverse-alt` | `#2D2926` / `#4A423B` | Primary hover |
+| `on-inverse` | `#FFFFFF` / `#F3EBE2` | Text on inverse surfaces |
+
+Elevations deepen in dark: `shadow-soft` goes from
+`0 1px 2px #0000000a` → `0 2px 6px #00000066`. Focus ring flips:
+`0 0 0 3px #1a1a1a14` → `0 0 0 3px #f3ebe214`.
+
+**`ink` vs `inverse` split.** `ink` is the text semantics — it flips
+to cream in dark so body copy reads on the dark canvas. `inverse` is
+the surface semantics — it stays near-black in both modes so the save
+bar and primary buttons always anchor the darkest weight in the
+composition. Use `text-ink` for reading text, `bg-inverse
+text-on-inverse` for hero surfaces.
+
+Theme toggle lives in `src/components/ThemeToggle.tsx`, mounted as the
+last row of the sidebar footer. State is a tiny zustand store in
+`src/state/theme.ts`. A pre-React inline script in `index.html`
+resolves the theme from `localStorage["ccsettings:theme"]` (falling
+back to `prefers-color-scheme`) and adds the `.dark` class to `<html>`
+before CSS paints, so there's no flash-of-wrong-theme on load.
+
+## 6. Working with Pencil
 
 When a change affects visual design:
 

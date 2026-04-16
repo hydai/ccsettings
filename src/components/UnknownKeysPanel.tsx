@@ -94,7 +94,8 @@ function KeyGroup({
       variant="soft"
       className={cn(
         "p-5 space-y-3",
-        tone === "unknown" && "border-l-[3px] border-amber-500",
+        tone === "unknown" &&
+          "border-l-[3px] border-amber-500 dark:border-amber-400",
       )}
     >
       <div className="flex items-baseline justify-between">

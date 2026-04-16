@@ -111,7 +111,7 @@ function EmptyState() {
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
     <li className="flex gap-3 font-body text-sm leading-[1.55] text-body">
-      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-ink text-card text-xs flex items-center justify-center font-sans font-semibold">
+      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-inverse text-on-inverse text-xs flex items-center justify-center font-sans font-semibold">
         {n}
       </span>
       <span className="pt-0.5">{children}</span>
