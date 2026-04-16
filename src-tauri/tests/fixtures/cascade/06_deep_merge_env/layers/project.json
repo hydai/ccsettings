@@ -1,0 +1,6 @@
+{
+  "env": {
+    "EDITOR": "code",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "opus"
+  }
+}

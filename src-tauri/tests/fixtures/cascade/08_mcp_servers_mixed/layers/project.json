@@ -1,0 +1,4 @@
+{
+  "enabledMcpjsonServers": ["discord", "calendar"],
+  "disabledMcpjsonServers": ["experimental-mcp"]
+}

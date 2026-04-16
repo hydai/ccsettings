@@ -1,0 +1,23 @@
+{
+  "model": "opus",
+  "effortLevel": "high",
+  "alwaysThinkingEnabled": true,
+  "env": {
+    "EDITOR": "code",
+    "PAGER": "less"
+  },
+  "permissions": {
+    "deny": ["Bash(rm -rf /*)", "Bash(sudo *)"],
+    "allow": ["Bash(git *)", "WebFetch(*)"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "echo hello" }
+        ]
+      }
+    ]
+  }
+}

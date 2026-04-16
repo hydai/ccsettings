@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": ["Bash(git *)", "mcp__pencil", "WebFetch(*)"],
+    "deny": ["Bash(rm -rf *)", "WebFetch(http://evil.*)"],
+    "ask": ["Bash(docker *)"]
+  }
+}

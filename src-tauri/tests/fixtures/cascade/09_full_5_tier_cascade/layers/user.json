@@ -1,0 +1,10 @@
+{
+  "model": "sonnet",
+  "env": {
+    "EDITOR": "vim",
+    "PAGER": "less"
+  },
+  "permissions": {
+    "allow": ["Bash(git *)"]
+  }
+}

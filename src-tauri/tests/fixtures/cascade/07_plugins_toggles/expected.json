@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true,
+    "episodic-memory@superpowers-marketplace": false,
+    "code-review@dotclaude": false
+  }
+}

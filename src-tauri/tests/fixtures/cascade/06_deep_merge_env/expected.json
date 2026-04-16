@@ -1,0 +1,8 @@
+{
+  "env": {
+    "PATH_PREFIX": "/usr/local/bin",
+    "EDITOR": "code",
+    "LANG": "en_US.UTF-8",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "opus"
+  }
+}
