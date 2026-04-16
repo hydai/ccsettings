@@ -31,7 +31,7 @@ function WorkspacePane({ workspace }: { workspace: Workspace }) {
   }, [workspace.id, load]);
 
   return (
-    <div className="p-8 max-w-6xl">
+    <div className="p-8 w-full max-w-6xl mx-auto">
       <header className="mb-6">
         <h2 className="text-2xl font-semibold">{workspace.name}</h2>
         <p className="text-sm text-muted mt-1 font-mono">{workspace.path}</p>
