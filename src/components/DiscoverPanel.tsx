@@ -130,13 +130,18 @@ export function DiscoverPanel({ onClose }: Props) {
                   className="mt-1 accent-ink"
                 />
                 <div className="flex-1 min-w-0">
+                  <div className="font-sans text-sm font-semibold text-ink truncate">
+                    {basenameOf(c.cwd)}
+                  </div>
                   <div
-                    className="font-mono text-[11px] truncate text-ink"
+                    className="font-mono text-[10px] text-muted truncate mt-0.5"
                     title={c.cwd ?? ""}
+                    dir="rtl"
+                    style={{ textAlign: "left" }}
                   >
                     {c.cwd}
                   </div>
-                  <div className="font-body text-[11px] text-muted mt-0.5">
+                  <div className="font-body text-[10px] text-muted mt-0.5">
                     {c.transcript_count} transcript
                     {c.transcript_count === 1 ? "" : "s"}
                     {c.last_active_unix_millis
@@ -177,6 +182,12 @@ export function DiscoverPanel({ onClose }: Props) {
       )}
     </Card>
   );
+}
+
+function basenameOf(p: string | null): string {
+  if (!p) return "(unknown)";
+  const parts = p.split("/").filter(Boolean);
+  return parts[parts.length - 1] ?? p;
 }
 
 function timeAgo(ms: number): string {
