@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { AlertTriangle, Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { cn } from "../lib/cn";
 import { TIER_LABEL } from "../lib/layers";
 import { useCascade } from "../state/cascade";
 import {
@@ -14,16 +15,36 @@ import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
 import { Button, Card, HelpNote, Input, SectionLabel, Textarea } from "./ui";
 
+/** All built-in Claude Code hook events, ordered roughly by lifecycle
+ *  (session → prompt → tool → response → environment → compaction).
+ *  Sourced from https://code.claude.com/docs/en/hooks. */
 const KNOWN_EVENTS = [
-  "PreToolUse",
-  "PostToolUse",
-  "UserPromptSubmit",
-  "Notification",
-  "Stop",
-  "SubagentStop",
   "SessionStart",
-  "SessionEnd",
+  "UserPromptSubmit",
+  "PreToolUse",
+  "PermissionRequest",
+  "PermissionDenied",
+  "PostToolUse",
+  "PostToolUseFailure",
+  "Notification",
+  "Elicitation",
+  "ElicitationResult",
+  "SubagentStart",
+  "SubagentStop",
+  "TaskCreated",
+  "TaskCompleted",
+  "TeammateIdle",
+  "Stop",
+  "StopFailure",
+  "InstructionsLoaded",
+  "ConfigChange",
+  "CwdChanged",
+  "FileChanged",
+  "WorktreeCreate",
+  "WorktreeRemove",
   "PreCompact",
+  "PostCompact",
+  "SessionEnd",
 ] as const;
 
 /** Patterns that warrant a visible warning — not a block. */
@@ -233,17 +254,15 @@ export function HooksEditor({ workspace }: Props) {
               <code className="font-mono">matcher</code> are grouped on save.
             </HelpNote>
             <HelpNote>
-              <strong className="font-semibold text-ink">Events:</strong>{" "}
-              <code className="font-mono">PreToolUse</code> (before any tool
+              <strong className="font-semibold text-ink">Events:</strong> 26
+              lifecycle hooks — session, prompt, tool call
+              (pre/post/failure/permission), subagent, task, compaction, and
+              filesystem/worktree watchers. The most common are{" "}
+              <code className="font-mono">PreToolUse</code> (before a tool
               call, can block),{" "}
-              <code className="font-mono">PostToolUse</code> (after),{" "}
-              <code className="font-mono">UserPromptSubmit</code>,{" "}
-              <code className="font-mono">Stop</code> /{" "}
-              <code className="font-mono">SubagentStop</code>,{" "}
-              <code className="font-mono">SessionStart</code> /{" "}
-              <code className="font-mono">SessionEnd</code>,{" "}
-              <code className="font-mono">Notification</code>,{" "}
-              <code className="font-mono">PreCompact</code>.
+              <code className="font-mono">PostToolUse</code>, and{" "}
+              <code className="font-mono">SessionStart</code>. Pick from the
+              dropdown.
             </HelpNote>
             <HelpNote>
               <strong className="font-semibold text-ink">Matcher:</strong>{" "}
@@ -334,6 +353,36 @@ function stripId(h: Hook): Omit<Hook, "id"> {
   return { event, matcher, command };
 }
 
+function EventSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const isKnown = (KNOWN_EVENTS as readonly string[]).includes(value);
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(
+        "w-56 bg-card border border-hairline rounded-soft-sm px-3 py-2.5",
+        "text-sm font-mono text-ink",
+        "focus:outline-none focus:border-[1.5px] focus:border-ink focus:shadow-focus-ink",
+      )}
+    >
+      {!isKnown && value && (
+        <option value={value}>{value} (custom)</option>
+      )}
+      {KNOWN_EVENTS.map((e) => (
+        <option key={e} value={e}>
+          {e}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function HookRow({
   hook,
   onChange,
@@ -348,19 +397,10 @@ function HookRow({
     <li>
       <Card variant="soft" className="p-4 space-y-3">
         <div className="flex gap-2">
-          <Input
-            type="text"
-            list="hook-events"
+          <EventSelect
             value={hook.event}
-            onChange={(e) => onChange("event", e.target.value)}
-            placeholder="PreToolUse"
-            className="w-40 font-mono !py-2.5"
+            onChange={(v) => onChange("event", v)}
           />
-          <datalist id="hook-events">
-            {KNOWN_EVENTS.map((e) => (
-              <option key={e} value={e} />
-            ))}
-          </datalist>
           <Input
             type="text"
             value={hook.matcher}
