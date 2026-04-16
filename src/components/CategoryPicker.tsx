@@ -15,7 +15,7 @@ const TABS: Tab[] = [
   { id: "model", label: "Model" },
   { id: "memory", label: "Memory" },
   { id: "plugins", label: "Plugins" },
-  { id: "hooks", label: "Hooks", phase: 4 },
+  { id: "hooks", label: "Hooks" },
   { id: "mcp", label: "MCP", phase: 4 },
 ];
 

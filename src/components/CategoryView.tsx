@@ -2,6 +2,7 @@ import type { Category } from "../state/ui";
 import type { MergedView, Workspace } from "../types";
 import { CascadeHeader } from "./CascadeHeader";
 import { EnvEditor } from "./EnvEditor";
+import { HooksEditor } from "./HooksEditor";
 import { MemoryEditor } from "./MemoryEditor";
 import { ModelEditor } from "./ModelEditor";
 import { PermissionsEditor } from "./PermissionsEditor";
@@ -27,6 +28,8 @@ export function CategoryView({ category, workspace, merged }: Props) {
       return <MemoryEditor workspace={workspace} />;
     case "plugins":
       return <PluginsEditor workspace={workspace} />;
+    case "hooks":
+      return <HooksEditor workspace={workspace} />;
     default:
       return (
         <ComingSoon
