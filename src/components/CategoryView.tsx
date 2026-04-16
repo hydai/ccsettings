@@ -1,6 +1,7 @@
 import type { Category } from "../state/ui";
 import type { MergedView, Workspace } from "../types";
 import { CascadeHeader } from "./CascadeHeader";
+import { CategoryHeader } from "./CategoryHeader";
 import { EnvEditor } from "./EnvEditor";
 import { HooksEditor } from "./HooksEditor";
 import { McpEditor } from "./McpEditor";
@@ -17,6 +18,19 @@ type Props = {
 };
 
 export function CategoryView({ category, workspace, merged }: Props) {
+  return (
+    <>
+      <CategoryHeader category={category} />
+      {renderBody(category, workspace, merged)}
+    </>
+  );
+}
+
+function renderBody(
+  category: Category,
+  workspace: Workspace,
+  merged: MergedView,
+) {
   switch (category) {
     case "overview":
       return <Overview merged={merged} />;
