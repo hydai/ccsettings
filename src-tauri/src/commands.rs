@@ -11,7 +11,7 @@ use crate::discovery::{self, DiscoveredProject};
 use crate::layers::{self, Layer, LayerContent, LayerKind};
 use crate::paths::{self, WorkspacePaths};
 use crate::writers;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -249,8 +249,8 @@ pub fn save_layer(
         ),
     };
 
-    let mut bytes = serde_json::to_vec_pretty(&new_value)
-        .map_err(|e| format!("serialize new_value: {e}"))?;
+    let mut bytes =
+        serde_json::to_vec_pretty(&new_value).map_err(|e| format!("serialize new_value: {e}"))?;
     bytes.push(b'\n');
 
     match writers::atomic_write_if(&path, &bytes, expected) {
@@ -264,6 +264,133 @@ pub fn save_layer(
         )),
         Err(e) => Err(e.to_string()),
     }
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MemoryScope {
+    User,
+    Project,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MemoryFile {
+    Claude,
+    Agents,
+    Gemini,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MemoryFileDto {
+    pub path: String,
+    pub exists: bool,
+    /// UTF-8 file content. None when the file does not exist.
+    pub content: Option<String>,
+    /// Hex SHA-256 of the on-disk bytes. None when absent.
+    pub hash: Option<String>,
+}
+
+/// Read a CLAUDE.md/AGENTS.md/GEMINI.md at the given scope.
+#[tauri::command]
+pub fn read_memory_file(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    scope: MemoryScope,
+    file: MemoryFile,
+) -> Result<MemoryFileDto, String> {
+    let workspace_path = {
+        let cfg = state.config.lock().expect("config mutex poisoned");
+        cfg.workspace(&workspace_id)
+            .ok_or_else(|| format!("unknown workspace id: {workspace_id}"))?
+            .path
+            .clone()
+    };
+    let path = resolve_memory_path(&workspace_path, scope, file)?;
+    match std::fs::read(&path) {
+        Ok(bytes) => {
+            let hash = Some(to_hex(&layers::sha256(&bytes)));
+            let content = match String::from_utf8(bytes) {
+                Ok(s) => Some(s),
+                Err(_) => {
+                    return Err(format!("{} is not valid UTF-8", paths::display_path(&path)));
+                }
+            };
+            Ok(MemoryFileDto {
+                path: paths::display_path(&path),
+                exists: true,
+                content,
+                hash,
+            })
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(MemoryFileDto {
+            path: paths::display_path(&path),
+            exists: false,
+            content: None,
+            hash: None,
+        }),
+        Err(e) => Err(format!("I/O reading {}: {e}", paths::display_path(&path))),
+    }
+}
+
+/// Atomically save a memory file with a SHA-256 precondition.
+/// HashMismatch surfaces as a "conflict:" error, same as save_layer.
+#[tauri::command]
+pub fn save_memory_file(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    scope: MemoryScope,
+    file: MemoryFile,
+    new_text: String,
+    expected_hash: Option<String>,
+) -> Result<MemoryFileDto, String> {
+    let workspace_path = {
+        let cfg = state.config.lock().expect("config mutex poisoned");
+        cfg.workspace(&workspace_id)
+            .ok_or_else(|| format!("unknown workspace id: {workspace_id}"))?
+            .path
+            .clone()
+    };
+    let path = resolve_memory_path(&workspace_path, scope, file)?;
+
+    let expected = match expected_hash.as_deref() {
+        None => None,
+        Some(hex) => Some(
+            from_hex(hex)
+                .ok_or_else(|| format!("invalid expected_hash (not 64 hex chars): {hex}"))?,
+        ),
+    };
+
+    match writers::atomic_write_if(&path, new_text.as_bytes(), expected) {
+        Ok(hash) => Ok(MemoryFileDto {
+            path: paths::display_path(&path),
+            exists: true,
+            content: Some(new_text),
+            hash: Some(to_hex(&hash)),
+        }),
+        Err(writers::WriterError::HashMismatch { .. }) => Err(format!(
+            "conflict: {path} changed since edit started",
+            path = path.display()
+        )),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+fn resolve_memory_path(
+    project_root: &Path,
+    scope: MemoryScope,
+    file: MemoryFile,
+) -> Result<PathBuf, String> {
+    let ws = WorkspacePaths::new(project_root.to_path_buf()).map_err(|e| e.to_string())?;
+    let memory = match scope {
+        MemoryScope::User => ws.user.memory,
+        MemoryScope::Project => ws.project.memory,
+    };
+    Ok(match file {
+        MemoryFile::Claude => memory.claude,
+        MemoryFile::Agents => memory.agents,
+        MemoryFile::Gemini => memory.gemini,
+    })
 }
 
 /// Resolve the absolute path of the given settings tier for a workspace.

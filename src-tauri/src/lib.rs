@@ -27,6 +27,8 @@ pub fn run() {
             commands::get_cascade,
             commands::get_layer_content,
             commands::save_layer,
+            commands::read_memory_file,
+            commands::save_memory_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
