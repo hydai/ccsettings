@@ -23,6 +23,7 @@ pub fn run() {
             commands::remove_workspace,
             commands::rename_workspace,
             commands::discover_workspaces_from_history,
+            commands::get_cascade,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

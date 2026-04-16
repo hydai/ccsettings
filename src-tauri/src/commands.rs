@@ -6,8 +6,10 @@
 //! `Result<T, String>` is what serializes cleanly to the JS side.
 
 use crate::appconfig::{self, AppConfig, Workspace};
+use crate::cascade::{self, MergedView};
 use crate::discovery::{self, DiscoveredProject};
-use crate::paths;
+use crate::layers::{self, Layer, LayerKind};
+use crate::paths::{self, WorkspacePaths};
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -146,6 +148,43 @@ pub fn rename_workspace(
 pub fn discover_workspaces_from_history() -> Result<Vec<DiscoveredProjectDto>, String> {
     let projects = discovery::discover_projects().map_err(|e| e.to_string())?;
     Ok(projects.iter().map(DiscoveredProjectDto::from).collect())
+}
+
+/// Load all five settings-cascade tiers for the given workspace and return
+/// the merged view. Absent or malformed layer files simply do not contribute
+/// — the merge is best-effort and never fails on per-layer problems.
+#[tauri::command]
+pub fn get_cascade(state: State<'_, AppState>, workspace_id: String) -> Result<MergedView, String> {
+    let workspace_path = {
+        let cfg = state.config.lock().expect("config mutex poisoned");
+        cfg.workspace(&workspace_id)
+            .ok_or_else(|| format!("unknown workspace id: {workspace_id}"))?
+            .path
+            .clone()
+    };
+    let layers = load_workspace_layers(&workspace_path).map_err(|e| e.to_string())?;
+    Ok(cascade::merge(&layers))
+}
+
+/// Load the settings.json tier files for a workspace. On platforms where no
+/// managed-settings path is defined, the managed tier is omitted entirely
+/// (not synthesized as Absent) so `origins` stays clean.
+fn load_workspace_layers(project_root: &std::path::Path) -> Result<Vec<Layer>, String> {
+    let ws = WorkspacePaths::new(project_root.to_path_buf()).map_err(|e| e.to_string())?;
+
+    let mut tiers: Vec<(LayerKind, PathBuf)> = Vec::with_capacity(5);
+    if let Some(managed) = paths::managed_settings_default_path() {
+        tiers.push((LayerKind::Managed, managed));
+    }
+    tiers.push((LayerKind::User, ws.user.settings.clone()));
+    tiers.push((LayerKind::UserLocal, ws.user.settings_local.clone()));
+    tiers.push((LayerKind::Project, ws.project.settings.clone()));
+    tiers.push((LayerKind::ProjectLocal, ws.project.settings_local.clone()));
+
+    tiers
+        .into_iter()
+        .map(|(kind, path)| layers::load_layer(kind, path).map_err(|e| e.to_string()))
+        .collect()
 }
 
 #[cfg(test)]
