@@ -134,6 +134,25 @@ pub fn app_data_dir() -> Result<PathBuf, PathsError> {
         .join("ccsettings"))
 }
 
+/// Canonical location of Claude Code's managed-settings file, if one exists
+/// for the current platform. This is the site-policy file maintained by an
+/// administrator and is at the bottom of the cascade.
+pub fn managed_settings_default_path() -> Option<PathBuf> {
+    if cfg!(target_os = "macos") {
+        Some(PathBuf::from(
+            "/Library/Application Support/ClaudeCode/managed-settings.json",
+        ))
+    } else if cfg!(target_os = "linux") {
+        Some(PathBuf::from("/etc/claude-code/managed-settings.json"))
+    } else if cfg!(target_os = "windows") {
+        Some(PathBuf::from(
+            r"C:\ProgramData\ClaudeCode\managed-settings.json",
+        ))
+    } else {
+        None
+    }
+}
+
 #[cfg(windows)]
 pub fn display_path(p: &Path) -> String {
     let s = p.to_string_lossy();
@@ -221,5 +240,27 @@ mod tests {
             display_path(Path::new(r"\\?\C:\Users\foo\bar")),
             "C:/Users/foo/bar"
         );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn managed_settings_default_is_macos_library_path() {
+        let p = managed_settings_default_path().unwrap();
+        assert!(p.to_string_lossy().contains("Library/Application Support"));
+        assert!(p.ends_with("managed-settings.json"));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn managed_settings_default_is_linux_etc_path() {
+        let p = managed_settings_default_path().unwrap();
+        assert_eq!(p, PathBuf::from("/etc/claude-code/managed-settings.json"));
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn managed_settings_default_is_windows_programdata_path() {
+        let p = managed_settings_default_path().unwrap();
+        assert!(p.to_string_lossy().contains(r"ProgramData\ClaudeCode"));
     }
 }
