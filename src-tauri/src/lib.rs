@@ -1,4 +1,5 @@
 pub mod cascade;
+pub mod discovery;
 pub mod layers;
 pub mod paths;
 

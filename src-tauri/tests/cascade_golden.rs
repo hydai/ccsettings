@@ -47,7 +47,8 @@ fn run(name: &str) {
         .unwrap_or_else(|e| panic!("parse {}: {e}", expected_path.display()));
 
     assert_eq!(
-        merged.value, expected,
+        merged.value,
+        expected,
         "\n\nfixture `{name}` mismatch\n--- actual ---\n{}\n--- expected ---\n{}\n",
         serde_json::to_string_pretty(&merged.value).unwrap(),
         serde_json::to_string_pretty(&expected).unwrap(),
