@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
 import { TIER_LABEL } from "../lib/layers";
@@ -8,6 +9,7 @@ import {
 } from "../state/layerContent";
 import { useCascade } from "../state/cascade";
 import type { LayerKind, Workspace } from "../types";
+import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
 
@@ -59,6 +61,7 @@ export function PermissionsEditor({ workspace }: Props) {
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [newKind, setNewKind] = useState<Kind>("allow");
   const [newRule, setNewRule] = useState("");
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   const cascadeLoad = useCascade((s) => s.load);
 
@@ -81,7 +84,7 @@ export function PermissionsEditor({ workspace }: Props) {
     return () => {
       active = false;
     };
-  }, [workspace.id, target]);
+  }, [workspace.id, target, reloadNonce]);
 
   const dirty =
     JSON.stringify(draft) !== JSON.stringify(listsFromLayer(layerFile));
@@ -201,6 +204,21 @@ export function PermissionsEditor({ workspace }: Props) {
             error={error}
             onSave={save}
             onDiscard={revert}
+          />
+
+          <BackupsList
+            fetchBackups={() =>
+              invoke<BackupEntry[]>("list_backups_for_layer", {
+                workspaceId: workspace.id,
+                layer: target,
+              })
+            }
+            currentHash={layerFile?.hash ?? null}
+            onRestored={async () => {
+              setReloadNonce((n) => n + 1);
+              useCascade.getState().invalidate();
+              await cascadeLoad(workspace.id);
+            }}
           />
         </>
       )}

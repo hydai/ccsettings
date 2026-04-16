@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { AlertTriangle, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
@@ -9,6 +10,7 @@ import {
   type LayerFile,
 } from "../state/layerContent";
 import type { LayerKind, Workspace } from "../types";
+import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
 import { TierPicker } from "./TierPicker";
 
@@ -119,6 +121,7 @@ export function HooksEditor({ workspace }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   const cascadeLoad = useCascade((s) => s.load);
 
@@ -141,7 +144,7 @@ export function HooksEditor({ workspace }: Props) {
     return () => {
       active = false;
     };
-  }, [workspace.id, target]);
+  }, [workspace.id, target, reloadNonce]);
 
   const dirty =
     JSON.stringify(rows.map(stripId)) !==
@@ -250,6 +253,21 @@ export function HooksEditor({ workspace }: Props) {
             error={error}
             onSave={save}
             onDiscard={revert}
+          />
+
+          <BackupsList
+            fetchBackups={() =>
+              invoke<BackupEntry[]>("list_backups_for_layer", {
+                workspaceId: workspace.id,
+                layer: target,
+              })
+            }
+            currentHash={layerFile?.hash ?? null}
+            onRestored={async () => {
+              setReloadNonce((n) => n + 1);
+              useCascade.getState().invalidate();
+              await cascadeLoad(workspace.id);
+            }}
           />
         </>
       )}

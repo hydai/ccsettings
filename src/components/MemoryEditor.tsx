@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
 import type { Workspace } from "../types";
+import { BackupsList, type BackupEntry } from "./BackupsList";
 import { SaveControls } from "./SaveControls";
 
 type Scope = "user" | "project";
@@ -64,6 +65,7 @@ export function MemoryEditor({ workspace }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -84,7 +86,7 @@ export function MemoryEditor({ workspace }: Props) {
     return () => {
       active = false;
     };
-  }, [workspace.id, scope, kind]);
+  }, [workspace.id, scope, kind, reloadNonce]);
 
   const dirty = draft !== (file?.content ?? "");
 
@@ -193,6 +195,20 @@ export function MemoryEditor({ workspace }: Props) {
             error={error}
             onSave={save}
             onDiscard={revert}
+          />
+
+          <BackupsList
+            fetchBackups={() =>
+              invoke<BackupEntry[]>("list_backups_for_memory", {
+                workspaceId: workspace.id,
+                scope,
+                file: kind,
+              })
+            }
+            currentHash={file?.hash ?? null}
+            onRestored={async () => {
+              setReloadNonce((n) => n + 1);
+            }}
           />
         </>
       )}
