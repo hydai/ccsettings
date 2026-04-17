@@ -34,5 +34,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/hydai/ccsettings/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU5RkNEQkE2RUYzQjg1NDMKUldSRGhUdnZwdHY4V1NYTkM0SSs0dFkvME9LS05BQjBTeUZVLy84WGhmalBYYlE1cUxCRVQvTTUK"
+    }
   }
 }
