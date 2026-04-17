@@ -3,6 +3,9 @@ name = "ccsettings"
 version = "0.1.0"
 description = "GUI to visualize and edit Claude Code settings across system, project, and local tiers"
 edition = "2021"
+license = "Apache-2.0"
+authors = ["hydai"]
+repository = "https://github.com/hydai/ccsettings"
 
 [lib]
 name = "ccsettings_lib"
