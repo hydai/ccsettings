@@ -129,6 +129,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+          shopt -s nullglob  # make *.sig expand to empty when there are no matches
           mkdir -p /tmp/sigs
           cd /tmp/sigs
 
@@ -141,6 +142,14 @@ jobs:
 
           ls -la
 
+          # Up-front sanity: if no .sig files downloaded, diagnose clearly
+          # rather than letting the loop iterate on the literal "*.sig".
+          sig_files=(*.sig)
+          if [ ${#sig_files[@]} -eq 0 ]; then
+            echo "::error::no .sig files found on the draft release — tauri-action likely ran without TAURI_SIGNING_PRIVATE_KEY set"
+            exit 1
+          fi
+
           # Classify each .sig by substring and remember its bundle URL.
           # tauri-action v0 names them like:
           #   ccsettings_${V}_aarch64.app.tar.gz.sig
@@ -152,7 +161,7 @@ jobs:
 
           declare -A SIG
           declare -A URL
-          for f in *.sig; do
+          for f in "${sig_files[@]}"; do
             bundle="${f%.sig}"
             content=$(cat "$f")
             case "$bundle" in
