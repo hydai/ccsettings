@@ -86,7 +86,17 @@ export const useUpdater = create<UpdaterState>((set, get) => ({
 
   async check(opts) {
     const manual = opts?.manual ?? false;
-    set({ status: "checking", error: null, dismissed: false });
+    // Reset transient fields so a previous download's progress / latest
+    // info doesn't linger into the new cycle.
+    set({
+      status: "checking",
+      error: null,
+      dismissed: false,
+      progress: null,
+      latestVersion: null,
+      notes: null,
+      pending: null,
+    });
 
     try {
       if (get().currentVersion === "0.0.0") {
@@ -150,7 +160,7 @@ export const useUpdater = create<UpdaterState>((set, get) => ({
           }
         });
         setPendingInstall();
-        set({ status: "ready" });
+        set({ status: "ready", progress: null });
       } catch (e) {
         set({
           status: "error",
