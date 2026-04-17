@@ -111,11 +111,11 @@ export const useUpdater = create<UpdaterState>((set, get) => ({
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      if (manual) {
-        set({ status: "error", error: msg });
-      } else {
-        set({ status: "idle", error: null });
-      }
+      // Always set status to "error" so the sidebar pill surfaces "⚠ Retry".
+      // For auto-checks we additionally pre-dismiss the banner so the error
+      // stays silent in the main pane — users notice the pill at their
+      // leisure, clicking it un-dismisses and reveals the banner's retry.
+      set({ status: "error", error: msg, dismissed: !manual });
     }
   },
 
