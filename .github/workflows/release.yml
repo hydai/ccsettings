@@ -66,25 +66,47 @@ jobs:
       - name: npm ci
         run: npm ci
 
-      - name: Build with tauri-action
-        uses: tauri-apps/tauri-action@v0
+      - name: Export Apple signing env (if secrets present)
+        if: matrix.platform.os == 'macos-latest'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS code signing + notarization (optional — builds unsigned if absent).
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            echo "Apple cert found; exporting signing env for tauri-action."
+            {
+              echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
+              echo "APPLE_CERTIFICATE<<__CCSETTINGS_EOF__"
+              echo "$APPLE_CERTIFICATE"
+              echo "__CCSETTINGS_EOF__"
+              echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
+              echo "APPLE_ID=$APPLE_ID"
+              echo "APPLE_PASSWORD=$APPLE_PASSWORD"
+              echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+            } >> "$GITHUB_ENV"
+          else
+            echo "No Apple cert secret; macOS build will ship unsigned."
+          fi
+
+      - name: Build with tauri-action
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'ccsettings ${{ github.ref_name }}'
           releaseBody: |
             See the CHANGELOG for details.
 
-            macOS downloads are signed + notarized.
-            Windows downloads are unsigned in v1 — SmartScreen will warn on first launch; click "More info" then "Run anyway".
+            macOS downloads are unsigned until the Apple signing secrets
+            are configured; Gatekeeper will warn — right-click the .app
+            and pick "Open" the first time.
+            Windows downloads are unsigned; SmartScreen will warn on
+            first launch — click "More info" then "Run anyway".
             Linux: AppImage is portable; .deb installs system-wide.
           releaseDraft: true
           prerelease: ${{ contains(github.ref_name, '-') }}
