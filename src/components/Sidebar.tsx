@@ -175,9 +175,10 @@ function UpdatePill() {
         "focus:outline-none focus-visible:shadow-focus-ink",
         tone,
       )}
-      aria-live="polite"
     >
-      {label}
+      <span role="status" aria-live="polite">
+        {label}
+      </span>
     </button>
   );
 }

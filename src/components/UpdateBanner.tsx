@@ -44,7 +44,7 @@ export function UpdateBanner() {
         isError ? "bg-conflict text-on-inverse" : "bg-inverse text-on-inverse",
       )}
       role="status"
-      aria-live="polite"
+      aria-live={isDownloading ? "off" : "polite"}
     >
       <span className="font-sans text-sm font-semibold truncate">
         {leftLabel}
