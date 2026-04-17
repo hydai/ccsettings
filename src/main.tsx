@@ -41,8 +41,11 @@ async function applyPendingInstall() {
       });
     }
   } catch {
-    // check() itself threw (network unreachable etc.) — leave the flag set
-    // so we retry on the next launch. User can also dismiss via the banner.
+    // check() itself threw (network unreachable etc.). Stay silent here —
+    // the flag remains set so the next launch retries, and because status
+    // stays "idle" the +3s delayed auto-check in bootstrap() will also fire
+    // once React mounts, giving the user in-session feedback if the network
+    // is still down.
   }
 }
 
