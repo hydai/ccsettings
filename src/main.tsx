@@ -58,8 +58,13 @@ async function bootstrap() {
   );
 
   setTimeout(() => {
-    if (useUpdater.getState().autoCheck) {
-      useUpdater.getState().check();
+    const s = useUpdater.getState();
+    // Only fire the delayed auto-check if the store is pristine. If
+    // applyPendingInstall already staged a status (e.g. "error" from a
+    // failed pending install), a fresh check() would wipe that feedback
+    // before the user had a chance to see it.
+    if (s.autoCheck && s.status === "idle") {
+      s.check();
     }
   }, 3000);
 }
