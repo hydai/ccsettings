@@ -6,6 +6,7 @@ import { Card } from "./ui";
 import { CategoryPicker } from "./CategoryPicker";
 import { CategoryView } from "./CategoryView";
 import { Sidebar } from "./Sidebar";
+import { UpdateBanner } from "./UpdateBanner";
 import type { Workspace } from "../types";
 
 export function AppShell() {
@@ -40,6 +41,8 @@ function WorkspacePane({ workspace }: { workspace: Workspace }) {
         <p className="font-mono text-xs text-muted mt-1.5">{workspace.path}</p>
       </header>
 
+      <UpdateBanner />
+
       <CategoryPicker />
 
       {loading && !merged && (
@@ -66,7 +69,10 @@ function WorkspacePane({ workspace }: { workspace: Workspace }) {
 
 function EmptyState() {
   return (
-    <div className="h-full flex items-center justify-center p-8">
+    <div className="h-full flex flex-col items-center justify-center p-8 gap-6">
+      <div className="w-full max-w-xl empty:hidden">
+        <UpdateBanner />
+      </div>
       <Card variant="soft" className="max-w-xl p-10 space-y-6">
         <div>
           <h2 className="font-display text-3xl font-medium text-ink leading-tight mb-2">
