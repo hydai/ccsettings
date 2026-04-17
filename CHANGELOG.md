@@ -4,7 +4,12 @@ Conventional-commits–driven notes. Dates are UTC.
 
 ## Unreleased
 
-First release targeting `v1.0.0`. Highlights:
+(Nothing yet — changes after v0.1.0-rc.1 land here.)
+
+## v0.1.0-rc.1 — 2026-04-17
+
+First release candidate. Exercises the tauri-action build +
+artifact-upload pipeline end-to-end. Highlights:
 
 ### Visualization
 
