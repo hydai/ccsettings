@@ -4,7 +4,15 @@ Conventional-commits–driven notes. Dates are UTC.
 
 ## Unreleased
 
-(Nothing yet — changes after v0.1.0-rc.1 land here.)
+(Nothing yet — changes after v0.1.0 land here.)
+
+## v0.1.0 — 2026-04-17
+
+First stable release. Functionally identical to v0.1.0-rc.1 after
+smoke-testing the release-candidate artifacts — see that section
+below for the full feature list. Installers ship unsigned on macOS
+and Windows; re-enable signing by populating the `APPLE_*` repo
+secrets (the release workflow picks them up automatically).
 
 ## v0.1.0-rc.1 — 2026-04-17
 
