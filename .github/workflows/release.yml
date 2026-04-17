@@ -113,3 +113,110 @@ jobs:
           releaseDraft: true
           prerelease: ${{ contains(github.ref_name, '-') }}
           args: ${{ matrix.platform.args }}
+
+  publish-manifest:
+    name: publish latest.json
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Assemble and upload latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/sigs
+          cd /tmp/sigs
+
+          # Download every .sig asset from the draft release. Using --pattern
+          # with a glob keeps this robust against tauri-action naming changes.
+          gh release download "$TAG" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --pattern '*.sig' \
+            --dir /tmp/sigs
+
+          ls -la
+
+          # Classify each .sig by substring and remember its bundle URL.
+          # tauri-action v0 names them like:
+          #   ccsettings_${V}_aarch64.app.tar.gz.sig
+          #   ccsettings_${V}_x64.app.tar.gz.sig
+          #   ccsettings_${V}_amd64.AppImage.tar.gz.sig
+          #   ccsettings_${V}_x64-setup.nsis.zip.sig
+          VERSION="${TAG#v}"
+          BASE="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}"
+
+          declare -A SIG
+          declare -A URL
+          for f in *.sig; do
+            bundle="${f%.sig}"
+            content=$(cat "$f")
+            case "$bundle" in
+              *aarch64.app.tar.gz)
+                SIG[darwin-aarch64]="$content"
+                URL[darwin-aarch64]="${BASE}/${bundle}"
+                ;;
+              *x64.app.tar.gz)
+                SIG[darwin-x86_64]="$content"
+                URL[darwin-x86_64]="${BASE}/${bundle}"
+                ;;
+              *.AppImage.tar.gz)
+                SIG[linux-x86_64]="$content"
+                URL[linux-x86_64]="${BASE}/${bundle}"
+                ;;
+              *nsis.zip)
+                SIG[windows-x86_64]="$content"
+                URL[windows-x86_64]="${BASE}/${bundle}"
+                ;;
+              *)
+                echo "::warning::unrecognized signed bundle: $bundle"
+                ;;
+            esac
+          done
+
+          # Fail loudly if any platform is missing its signature — we don't
+          # want to publish a manifest that silently omits a platform.
+          for plat in darwin-aarch64 darwin-x86_64 linux-x86_64 windows-x86_64; do
+            if [ -z "${SIG[$plat]:-}" ]; then
+              echo "::error::missing signed bundle for $plat"
+              exit 1
+            fi
+          done
+
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          cat > /tmp/latest.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See the CHANGELOG for details.",
+            "pub_date": "${PUB_DATE}",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "${SIG[darwin-aarch64]}",
+                "url": "${URL[darwin-aarch64]}"
+              },
+              "darwin-x86_64": {
+                "signature": "${SIG[darwin-x86_64]}",
+                "url": "${URL[darwin-x86_64]}"
+              },
+              "linux-x86_64": {
+                "signature": "${SIG[linux-x86_64]}",
+                "url": "${URL[linux-x86_64]}"
+              },
+              "windows-x86_64": {
+                "signature": "${SIG[windows-x86_64]}",
+                "url": "${URL[windows-x86_64]}"
+              }
+            }
+          }
+          EOF
+
+          python3 -m json.tool /tmp/latest.json > /dev/null
+
+          gh release upload "$TAG" /tmp/latest.json \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber
