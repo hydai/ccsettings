@@ -156,13 +156,19 @@ function UpdatePill() {
   return (
     <button
       type="button"
-      onClick={() =>
-        status === "error"
-          ? check({ manual: true })
-          : document
-              .querySelector("main")
-              ?.scrollTo({ top: 0, behavior: "smooth" })
-      }
+      onClick={() => {
+        if (status === "error") {
+          check({ manual: true });
+          return;
+        }
+        // Re-surface the banner if the user dismissed it earlier, and
+        // scroll it into view. Calling setState directly avoids a
+        // pointless re-check round-trip when we already know the update.
+        useUpdater.setState({ dismissed: false });
+        document
+          .querySelector("main")
+          ?.scrollTo({ top: 0, behavior: "smooth" });
+      }}
       className={cn(
         "w-full rounded-full px-3 py-1.5 font-sans text-xs font-medium",
         "transition-colors text-left",
