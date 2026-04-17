@@ -10,17 +10,24 @@ import {
 import "./styles.css";
 
 async function applyPendingInstall() {
-  clearPendingInstall();
   try {
     const update = await check();
     if (update) {
+      // Clear inside this branch so a transient check() failure above keeps
+      // the flag set for the next launch to retry, but a broken bundle
+      // (signature/install error from downloadAndInstall) doesn't trap the
+      // user in an infinite install-retry loop on every boot.
+      clearPendingInstall();
       await update.downloadAndInstall();
       // downloadAndInstall triggers a relaunch on success; execution does
       // not typically reach the next line.
+    } else {
+      // Already on latest — nothing to install, drop the flag.
+      clearPendingInstall();
     }
   } catch {
-    // Silent failure — continue to normal startup. User can retry via the
-    // sidebar pill / banner.
+    // check() itself threw (network unreachable etc.) — leave the flag set
+    // so we retry on the next launch. User can also dismiss via the banner.
   }
 }
 
