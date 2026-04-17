@@ -2,6 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
+import { useUpdater } from "../state/updater";
 import { useWorkspaces } from "../state/workspaces";
 import { DiscoverPanel } from "./DiscoverPanel";
 import { ThemeToggle } from "./ThemeToggle";
@@ -119,7 +120,58 @@ export function Sidebar() {
           {showDiscover ? "Hide discovery" : "Discover from history"}
         </Button>
         <ThemeToggle />
+        <UpdatePill />
       </div>
     </aside>
+  );
+}
+
+function UpdatePill() {
+  const status = useUpdater((s) => s.status);
+  const latestVersion = useUpdater((s) => s.latestVersion);
+  const check = useUpdater((s) => s.check);
+
+  const visible =
+    status === "available" ||
+    status === "ready" ||
+    status === "downloading" ||
+    status === "error";
+
+  if (!visible) return null;
+
+  const label =
+    status === "error"
+      ? "⚠ Retry"
+      : status === "ready"
+        ? `v${latestVersion} pending`
+        : status === "downloading"
+          ? "Downloading…"
+          : `v${latestVersion} ↑`;
+
+  const tone =
+    status === "error"
+      ? "bg-danger-soft/10 text-danger-soft hover:bg-danger-soft/20"
+      : "bg-accent/15 text-accent hover:bg-accent/25";
+
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        status === "error"
+          ? check({ manual: true })
+          : document
+              .querySelector("main")
+              ?.scrollTo({ top: 0, behavior: "smooth" })
+      }
+      className={cn(
+        "w-full rounded-full px-3 py-1.5 font-sans text-xs font-medium",
+        "transition-colors text-left",
+        "focus:outline-none focus-visible:shadow-focus-ink",
+        tone,
+      )}
+      aria-live="polite"
+    >
+      {label}
+    </button>
   );
 }
