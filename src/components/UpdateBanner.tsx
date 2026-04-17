@@ -13,7 +13,7 @@ export function UpdateBanner() {
   const check = useUpdater((s) => s.check);
 
   if (status === "idle" || status === "checking") return null;
-  if (dismissed && status !== "error") return null;
+  if (dismissed) return null;
 
   const isError = status === "error";
   const isReady = status === "ready";
