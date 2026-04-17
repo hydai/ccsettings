@@ -26,3 +26,6 @@ dist-ssr
 
 # Claude Code per-user overrides (gitignored by convention)
 .claude/settings.local.json
+
+# Superpowers brainstorming session artifacts (local mockups, event logs)
+.superpowers/
