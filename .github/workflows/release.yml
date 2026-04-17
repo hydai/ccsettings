@@ -189,31 +189,34 @@ jobs:
 
           PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          cat > /tmp/latest.json <<EOF
-          {
-            "version": "${VERSION}",
-            "notes": "See the CHANGELOG for details.",
-            "pub_date": "${PUB_DATE}",
-            "platforms": {
-              "darwin-aarch64": {
-                "signature": "${SIG[darwin-aarch64]}",
-                "url": "${URL[darwin-aarch64]}"
-              },
-              "darwin-x86_64": {
-                "signature": "${SIG[darwin-x86_64]}",
-                "url": "${URL[darwin-x86_64]}"
-              },
-              "linux-x86_64": {
-                "signature": "${SIG[linux-x86_64]}",
-                "url": "${URL[linux-x86_64]}"
-              },
-              "windows-x86_64": {
-                "signature": "${SIG[windows-x86_64]}",
-                "url": "${URL[windows-x86_64]}"
+          # Build latest.json with jq so the raw multi-line minisign .sig
+          # contents get properly JSON-escaped (newlines → \n). Tauri's
+          # updater expects the signature field to be the full, unmodified
+          # .sig content — not a base64 re-encoding of it — so we only
+          # rely on jq for string escaping.
+          jq -n \
+            --arg version "$VERSION" \
+            --arg notes "See the CHANGELOG for details." \
+            --arg pub_date "$PUB_DATE" \
+            --arg sig_darwin_arm64 "${SIG[darwin-aarch64]}" \
+            --arg url_darwin_arm64 "${URL[darwin-aarch64]}" \
+            --arg sig_darwin_x86_64 "${SIG[darwin-x86_64]}" \
+            --arg url_darwin_x86_64 "${URL[darwin-x86_64]}" \
+            --arg sig_linux_x86_64 "${SIG[linux-x86_64]}" \
+            --arg url_linux_x86_64 "${URL[linux-x86_64]}" \
+            --arg sig_windows_x86_64 "${SIG[windows-x86_64]}" \
+            --arg url_windows_x86_64 "${URL[windows-x86_64]}" \
+            '{
+              version: $version,
+              notes: $notes,
+              pub_date: $pub_date,
+              platforms: {
+                "darwin-aarch64": { signature: $sig_darwin_arm64, url: $url_darwin_arm64 },
+                "darwin-x86_64":  { signature: $sig_darwin_x86_64, url: $url_darwin_x86_64 },
+                "linux-x86_64":   { signature: $sig_linux_x86_64, url: $url_linux_x86_64 },
+                "windows-x86_64": { signature: $sig_windows_x86_64, url: $url_windows_x86_64 }
               }
-            }
-          }
-          EOF
+            }' > /tmp/latest.json
 
           python3 -m json.tool /tmp/latest.json > /dev/null
 
