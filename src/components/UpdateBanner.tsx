@@ -26,7 +26,7 @@ export function UpdateBanner() {
       : null;
 
   const leftLabel = (() => {
-    if (isError) return `Update check failed — ${error ?? "unknown error"}`;
+    if (isError) return `Update failed — ${error ?? "unknown error"}`;
     if (isReady) return `v${latestVersion} will install on next launch`;
     if (isInstalling) return "Installing — ccsettings will restart…";
     if (isDownloading)
