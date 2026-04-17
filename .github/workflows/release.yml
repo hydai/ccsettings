@@ -87,5 +87,5 @@ jobs:
             Windows downloads are unsigned in v1 — SmartScreen will warn on first launch; click "More info" then "Run anyway".
             Linux: AppImage is portable; .deb installs system-wide.
           releaseDraft: true
-          prerelease: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
           args: ${{ matrix.platform.args }}
