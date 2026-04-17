@@ -113,7 +113,7 @@ pub fn list_for_source(source: &Path) -> Result<Vec<BackupEntry>, BackupError> {
         return Ok(Vec::new());
     }
     let mut entries = read_bak_entries(&dir, source)?;
-    entries.sort_by(|a, b| b.created_unix_millis.cmp(&a.created_unix_millis));
+    entries.sort_by_key(|b| std::cmp::Reverse(b.created_unix_millis));
     Ok(entries)
 }
 
@@ -228,7 +228,7 @@ fn prune_dir(dir: &Path) -> Result<usize, BackupError> {
             }
         }
     }
-    entries.sort_by(|a, b| b.0.cmp(&a.0));
+    entries.sort_by_key(|b| std::cmp::Reverse(b.0));
 
     let mut removed = 0usize;
     for (i, (mtime, path)) in entries.iter().enumerate() {
