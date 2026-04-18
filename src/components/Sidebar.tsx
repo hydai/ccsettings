@@ -1,5 +1,5 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import { Info, Plus, Search } from "lucide-react";
+import { AlertTriangle, Info, Plus, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
 import { useUi } from "../state/ui";
@@ -10,8 +10,16 @@ import { ThemeToggle } from "./ThemeToggle";
 import { Button, SectionLabel } from "./ui";
 
 export function Sidebar() {
-  const { workspaces, selectedId, reload, select, add, error, loading } =
-    useWorkspaces();
+  const {
+    workspaces,
+    selectedId,
+    reload,
+    select,
+    add,
+    remove,
+    error,
+    loading,
+  } = useWorkspaces();
   const [showDiscover, setShowDiscover] = useState(false);
 
   useEffect(() => {
@@ -69,26 +77,56 @@ export function Sidebar() {
         <ul className="px-2 space-y-1">
           {workspaces.map((w) => (
             <li key={w.id}>
-              <button
-                type="button"
-                onClick={() => select(w.id)}
+              <div
                 className={cn(
-                  "w-full text-left px-3 py-2.5 rounded-soft-sm transition-colors",
+                  "group relative rounded-soft-sm transition-colors",
                   selectedId === w.id
                     ? "bg-card shadow-soft"
                     : "hover:bg-card/60",
                 )}
               >
-                <div className="font-sans font-semibold text-sm text-ink truncate">
-                  {w.name}
-                </div>
-                <div
-                  className="font-mono text-[11px] text-muted truncate mt-0.5"
-                  title={w.path}
+                <button
+                  type="button"
+                  onClick={() => select(w.id)}
+                  className={cn(
+                    "w-full text-left px-3 py-2.5 pr-10 rounded-soft-sm",
+                    "focus:outline-none focus-visible:shadow-focus-ink",
+                    !w.exists && "opacity-60",
+                  )}
                 >
-                  {w.path}
-                </div>
-              </button>
+                  <div className="flex items-center gap-1.5">
+                    {!w.exists && (
+                      <AlertTriangle
+                        className="w-3.5 h-3.5 text-danger-soft shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <div className="font-sans font-semibold text-sm text-ink truncate">
+                      {w.name}
+                    </div>
+                  </div>
+                  <div
+                    className="font-mono text-[11px] text-muted truncate mt-0.5"
+                    title={w.exists ? w.path : `Path not found: ${w.path}`}
+                  >
+                    {w.path}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(w.id)}
+                  aria-label={`Remove ${w.name}`}
+                  className={cn(
+                    "absolute right-1.5 top-1/2 -translate-y-1/2",
+                    "w-7 h-7 flex items-center justify-center rounded-full",
+                    "text-muted hover:bg-danger-soft/10 hover:text-danger-soft",
+                    "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                    "transition-colors focus:outline-none focus-visible:shadow-focus-ink",
+                  )}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
