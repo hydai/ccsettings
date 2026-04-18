@@ -53,6 +53,10 @@ pub struct WorkspaceDto {
     /// Display form of the path (forward slashes on all platforms).
     pub path: String,
     pub added_at: String,
+    /// True when the stored path resolves to something on disk at DTO build time.
+    /// I/O failures (e.g., permission denied walking to the parent) collapse to
+    /// false — the UI treatment is identical to "not found".
+    pub exists: bool,
 }
 
 impl From<&Workspace> for WorkspaceDto {
@@ -62,6 +66,7 @@ impl From<&Workspace> for WorkspaceDto {
             name: w.name.clone(),
             path: paths::display_path(&w.path),
             added_at: w.added_at.format(&Rfc3339).unwrap_or_default(),
+            exists: w.path.try_exists().unwrap_or(false),
         }
     }
 }
@@ -714,6 +719,21 @@ mod tests {
         assert_eq!(dto.name, "alpha");
         assert_eq!(dto.path, "/work/alpha");
         assert!(dto.added_at.starts_with("2023-"), "got {}", dto.added_at);
+        // Fictional path: exists flag should be false.
+        assert!(!dto.exists);
+    }
+
+    #[test]
+    fn workspace_dto_exists_true_for_real_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let ws = Workspace {
+            id: "real".into(),
+            name: "real".into(),
+            path: dir.path().to_path_buf(),
+            added_at: OffsetDateTime::from_unix_timestamp(1_700_000_000).unwrap(),
+        };
+        let dto = WorkspaceDto::from(&ws);
+        assert!(dto.exists, "tempdir should exist while guard is alive");
     }
 
     #[test]

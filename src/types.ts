@@ -10,6 +10,8 @@ export type Workspace = {
   path: string;
   /** RFC3339 timestamp. */
   added_at: string;
+  /** True when the stored path resolved on disk at list_workspaces time. */
+  exists: boolean;
 };
 
 export type DiscoveredProject = {
