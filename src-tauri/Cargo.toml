@@ -1,6 +1,6 @@
 [package]
 name = "ccsettings"
-version = "0.1.1"
+version = "0.1.2"
 description = "GUI to visualize and edit Claude Code settings across system, project, and local tiers"
 edition = "2021"
 license = "Apache-2.0"

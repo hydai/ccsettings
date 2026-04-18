@@ -4,7 +4,20 @@ Conventional-commits–driven notes. Dates are UTC.
 
 ## Unreleased
 
-(Nothing yet — changes after v0.1.1 land here.)
+(Nothing yet — changes after v0.1.2 land here.)
+
+## v0.1.2 — 2026-04-18
+
+Fix for a v0.1.1 bug discovered immediately after release: on macOS
+the in-app updater would download and install the new bundle, but
+never restart the app — leaving the UI frozen at "Installing —
+ccsettings will restart…" while the .app on disk had actually been
+replaced. Users had to quit and reopen manually.
+
+- **Explicit relaunch via `tauri-plugin-process`**: after
+  `downloadAndInstall()` completes, `relaunch()` is now called to
+  start the new binary. Applies to both the in-session install flow
+  and the pre-mount "install on next launch" consumption.
 
 ## v0.1.1 — 2026-04-18
 
