@@ -1,3 +1,4 @@
+import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -26,8 +27,9 @@ async function applyPendingInstall() {
 
     try {
       await update.downloadAndInstall();
-      // downloadAndInstall triggers a relaunch on success; execution does
-      // not typically reach the next line.
+      // downloadAndInstall replaces the bundle on disk but doesn't restart
+      // on macOS. Explicit relaunch ensures the new version actually starts.
+      await relaunch();
     } catch (e) {
       // The pending install failed (download error, signature mismatch, IO
       // failure). Stage the error on the store before React mounts so the

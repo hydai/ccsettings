@@ -1,4 +1,5 @@
 import { getVersion } from "@tauri-apps/api/app";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { create } from "zustand";
 
@@ -197,6 +198,11 @@ export const useUpdater = create<UpdaterState>((set, get) => ({
           set({ status: "installing", progress: null });
         }
       });
+      // Tauri's downloadAndInstall replaces the .app on disk but does not
+      // restart the running process — at least not on macOS. Explicitly
+      // relaunch so the user actually lands on the new version instead of
+      // staring at a frozen "Installing…" banner.
+      await relaunch();
     } catch (e) {
       set({
         status: "error",
