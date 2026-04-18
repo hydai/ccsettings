@@ -4,7 +4,27 @@ Conventional-commits–driven notes. Dates are UTC.
 
 ## Unreleased
 
-(Nothing yet — changes after v0.1.0 land here.)
+(Nothing yet — changes after v0.1.1-rc.1 land here.)
+
+## v0.1.1-rc.1 — 2026-04-18
+
+First release candidate with the in-app updater. Primarily a pipeline
+validation — exercises the signed bundle + `latest.json` manifest flow
+before the stable v0.1.1 cut. Highlights versus v0.1.0:
+
+- **In-app auto-updater** via `tauri-plugin-updater`: on-startup
+  check + a manual "Check now" pill in the sidebar footer. Download,
+  Ed25519 signature verification, install, and relaunch happen inside
+  the app — no browser jumps.
+- **Sidebar footer pill** (`v0.1.2 ↑` / `⚠ Retry`) and a top banner
+  in the conflict-banner idiom surface update state. Banner offers
+  "Install & restart now" and "Install on next launch".
+- **Stable-only channel**: prerelease tags (like this one) are
+  filtered out of the GitHub-hosted `latest.json` endpoint.
+- **Signed release bundles**: `release.yml` now receives the
+  `TAURI_SIGNING_PRIVATE_KEY` secret, emits per-platform `.sig`
+  sidecars, and a new `publish-manifest` job assembles `latest.json`
+  using `jq` (raw minisign signature content, properly JSON-escaped).
 
 ## v0.1.0 — 2026-04-17
 
