@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useCascade } from "../state/cascade";
 import { useUi } from "../state/ui";
 import { useWorkspaces } from "../state/workspaces";
+import { AboutPane } from "./AboutPane";
 import { Card } from "./ui";
 import { CategoryPicker } from "./CategoryPicker";
 import { CategoryView } from "./CategoryView";
@@ -13,12 +14,19 @@ export function AppShell() {
   const selected = useWorkspaces(
     (s) => s.workspaces.find((w) => w.id === s.selectedId) ?? null,
   );
+  const view = useUi((s) => s.view);
 
   return (
     <div className="flex h-screen bg-canvas">
       <Sidebar />
       <main className="flex-1 min-w-0 overflow-auto">
-        {selected ? <WorkspacePane workspace={selected} /> : <EmptyState />}
+        {view === "about" ? (
+          <AboutPane />
+        ) : selected ? (
+          <WorkspacePane workspace={selected} />
+        ) : (
+          <EmptyState />
+        )}
       </main>
     </div>
   );
