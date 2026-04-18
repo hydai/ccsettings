@@ -57,6 +57,27 @@ function setPendingInstall() {
   }
 }
 
+const LAST_CHECKED_KEY = "ccsettings:updater:lastCheckedAt";
+
+function readLastCheckedAt(): number | null {
+  try {
+    const raw = localStorage.getItem(LAST_CHECKED_KEY);
+    if (raw === null) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastCheckedAt(t: number) {
+  try {
+    localStorage.setItem(LAST_CHECKED_KEY, String(t));
+  } catch {
+    // storage unavailable — UI will just show "Hasn't checked yet"
+  }
+}
+
 type UpdaterState = {
   status: UpdaterStatus;
   currentVersion: string;
@@ -67,6 +88,7 @@ type UpdaterState = {
   autoCheck: boolean;
   dismissed: boolean;
   pending: Update | null;
+  lastCheckedAt: number | null;
 
   check: (opts?: { manual?: boolean }) => Promise<void>;
   install: (when: "now" | "next-launch") => Promise<void>;
@@ -84,6 +106,7 @@ export const useUpdater = create<UpdaterState>((set, get) => ({
   autoCheck: readAutoCheck(),
   dismissed: false,
   pending: null,
+  lastCheckedAt: readLastCheckedAt(),
 
   async check(opts) {
     const manual = opts?.manual ?? false;
@@ -98,6 +121,15 @@ export const useUpdater = create<UpdaterState>((set, get) => ({
       notes: null,
       pending: null,
     });
+
+    // Records "this check attempt finished at T" — call once on the way out
+    // of a terminal state (idle/available/error). Persists so users see
+    // "last checked yesterday" across sessions.
+    const stamp = () => {
+      const now = Date.now();
+      writeLastCheckedAt(now);
+      set({ lastCheckedAt: now });
+    };
 
     try {
       if (get().currentVersion === "0.0.0") {
@@ -120,6 +152,7 @@ export const useUpdater = create<UpdaterState>((set, get) => ({
           pending: null,
         });
       }
+      stamp();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       // Always set status to "error" so the sidebar pill surfaces "⚠ Retry".
@@ -127,6 +160,7 @@ export const useUpdater = create<UpdaterState>((set, get) => ({
       // stays silent in the main pane — users notice the pill at their
       // leisure, clicking it un-dismisses and reveals the banner's retry.
       set({ status: "error", error: msg, dismissed: !manual });
+      stamp();
     }
   },
 
