@@ -4,7 +4,25 @@ Conventional-commits–driven notes. Dates are UTC.
 
 ## Unreleased
 
-(Nothing yet — changes after v0.1.3 land here.)
+(Nothing yet — changes after v0.1.4 land here.)
+
+## v0.1.4 — 2026-04-18
+
+New About pane accessible from the sidebar footer:
+
+- **Identity**: app name, current version, one-line description.
+- **Updates**: dedicated controls — "Check for updates" button (manual
+  trigger), "Automatically check on startup" toggle (mirrors and
+  persists the existing autoCheck preference), and a "Last checked X
+  ago" timestamp.
+- **Links**: Repository, Issues, and This release (linked to the
+  current version's GitHub release page).
+- **Platform**: OS / arch / Tauri runtime version line.
+- **License + credits**: Apache-2.0 · Built with Tauri, React, Zustand.
+
+Implementation note: a new `useUi.view` field routes the main pane
+between workspace and about modes. Selecting a workspace from the
+sidebar exits About automatically.
 
 ## v0.1.3 — 2026-04-18
 
