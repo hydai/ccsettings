@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
 import { useUpdater } from "../state/updater";
 
@@ -11,6 +12,20 @@ export function UpdateBanner() {
   const install = useUpdater((s) => s.install);
   const dismiss = useUpdater((s) => s.dismiss);
   const check = useUpdater((s) => s.check);
+
+  // If "installing" persists past a few seconds, the auto-restart isn't
+  // happening (e.g. user is on a pre-relaunch-fix version, hidden admin
+  // prompt, or some other macOS install hiccup). Swap copy to a hint that
+  // tells the user how to recover.
+  const [installStalled, setInstallStalled] = useState(false);
+  useEffect(() => {
+    if (status !== "installing") {
+      setInstallStalled(false);
+      return;
+    }
+    const t = setTimeout(() => setInstallStalled(true), 5000);
+    return () => clearTimeout(t);
+  }, [status]);
 
   if (status === "idle" || status === "checking") return null;
   if (dismissed) return null;
@@ -28,7 +43,10 @@ export function UpdateBanner() {
   const leftLabel = (() => {
     if (isError) return `Update failed — ${error ?? "unknown error"}`;
     if (isReady) return `v${latestVersion} will install on next launch`;
-    if (isInstalling) return "Installing — ccsettings will restart…";
+    if (isInstalling)
+      return installStalled
+        ? "Installing… If this doesn't restart in a moment, quit (⌘Q) and reopen to finish."
+        : "Installing — ccsettings will restart…";
     if (isDownloading)
       return percent !== null
         ? `Downloading v${latestVersion} — ${percent}%`
