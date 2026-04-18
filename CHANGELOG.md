@@ -4,7 +4,33 @@ Conventional-commits–driven notes. Dates are UTC.
 
 ## Unreleased
 
-(Nothing yet — changes after v0.1.4 land here.)
+(Nothing yet — changes after v0.1.5 land here.)
+
+## v0.1.5 — 2026-04-18
+
+Sidebar can now remove workspaces and flags stale entries whose path
+no longer resolves on disk.
+
+- **Remove button**: each workspace row reveals an inline "X" on
+  hover (and on keyboard focus). Clicking it removes the entry from
+  the sidebar and from `<config_dir>/ccsettings/config.json`. No
+  confirmation dialog — matches the inline-remove pattern already
+  used in the Env, Permissions, and Hooks editors. Removal is a
+  bookmark delete; re-adding is a two-click folder pick.
+- **Stale-path indicator**: `list_workspaces` now returns an `exists`
+  flag per workspace, populated via `Path::try_exists` at DTO build
+  time. Rows whose path has been moved or deleted are dimmed and
+  carry an `AlertTriangle` next to the name; the path tooltip reads
+  "Path not found: &lt;path&gt;" so users can tell at a glance which
+  entries need cleanup.
+- **Selection handover**: removing the currently-selected workspace
+  auto-selects the next remaining one (already handled in the
+  `useWorkspaces.remove` action); removing the last workspace brings
+  back the empty-state onboarding copy.
+
+Implementation note: the `remove_workspace` Tauri command and the
+`useWorkspaces.remove` store action already existed — this release
+is the UI wiring plus the `exists` flag on `WorkspaceDto`.
 
 ## v0.1.4 — 2026-04-18
 
