@@ -113,3 +113,109 @@ jobs:
           releaseDraft: true
           prerelease: ${{ contains(github.ref_name, '-') }}
           args: ${{ matrix.platform.args }}
+          # latest.json is assembled in the publish-manifest job below.
+          # Four matrix jobs writing the same manifest in parallel is a
+          # lost-update race — v0.1.5 shipped a manifest missing all
+          # macOS entries because of it.
+          includeUpdaterJson: false
+
+  publish-manifest:
+    name: publish latest.json
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Assemble and upload latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mkdir -p /tmp/sigs
+          cd /tmp/sigs
+
+          gh release download "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern '*.sig' \
+            --dir /tmp/sigs
+
+          sig_files=(*.sig)
+          if [ ${#sig_files[@]} -eq 0 ]; then
+            echo "::error::no .sig files on the draft release — did tauri-action run with TAURI_SIGNING_PRIVATE_KEY?"
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+          BASE="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}"
+
+          # Classify each .sig by its source bundle name. Glob patterns
+          # keep us robust against tauri-action filename tweaks.
+          declare -A SIG URL
+          for f in "${sig_files[@]}"; do
+            bundle="${f%.sig}"
+            content=$(cat "$f")
+            case "$bundle" in
+              *aarch64.app.tar.gz)
+                SIG[darwin-arm64]="$content";    URL[darwin-arm64]="${BASE}/${bundle}" ;;
+              *x64.app.tar.gz)
+                SIG[darwin-x86_64]="$content";   URL[darwin-x86_64]="${BASE}/${bundle}" ;;
+              *.AppImage)
+                SIG[linux-appimage]="$content";  URL[linux-appimage]="${BASE}/${bundle}" ;;
+              *.deb)
+                SIG[linux-deb]="$content";       URL[linux-deb]="${BASE}/${bundle}" ;;
+              *x64-setup.exe)
+                SIG[windows-nsis]="$content";    URL[windows-nsis]="${BASE}/${bundle}" ;;
+              *)
+                echo "::warning::unrecognized signed bundle: $bundle" ;;
+            esac
+          done
+
+          # Fail loudly if any expected platform is missing its .sig.
+          for plat in darwin-arm64 darwin-x86_64 linux-appimage linux-deb windows-nsis; do
+            if [ -z "${SIG[$plat]:-}" ]; then
+              echo "::error::missing signed bundle for $plat"
+              exit 1
+            fi
+          done
+
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          NOTES=$'See the CHANGELOG for details.\n\nmacOS downloads are unsigned until the Apple signing secrets\nare configured; Gatekeeper will warn — right-click the .app\nand pick "Open" the first time.\nWindows downloads are unsigned; SmartScreen will warn on\nfirst launch — click "More info" then "Run anyway".\nLinux: AppImage is portable; .deb installs system-wide.'
+
+          # Emit 9 keys — both primary and suffixed variants — matching
+          # tauri-action's canonical shape. Newer tauri-updater clients
+          # check the suffixed key (e.g. darwin-aarch64-app) first and
+          # fall back to the primary (darwin-aarch64); emit both.
+          jq -n \
+            --arg version "$VERSION" \
+            --arg notes "$NOTES" \
+            --arg pub_date "$PUB_DATE" \
+            --arg sig_darm  "${SIG[darwin-arm64]}"   --arg url_darm  "${URL[darwin-arm64]}" \
+            --arg sig_dx86  "${SIG[darwin-x86_64]}"  --arg url_dx86  "${URL[darwin-x86_64]}" \
+            --arg sig_lappi "${SIG[linux-appimage]}" --arg url_lappi "${URL[linux-appimage]}" \
+            --arg sig_ldeb  "${SIG[linux-deb]}"      --arg url_ldeb  "${URL[linux-deb]}" \
+            --arg sig_wnsis "${SIG[windows-nsis]}"   --arg url_wnsis "${URL[windows-nsis]}" \
+            '{
+              version: $version,
+              notes: $notes,
+              pub_date: $pub_date,
+              platforms: {
+                "darwin-aarch64":        { signature: $sig_darm,  url: $url_darm  },
+                "darwin-aarch64-app":    { signature: $sig_darm,  url: $url_darm  },
+                "darwin-x86_64":         { signature: $sig_dx86,  url: $url_dx86  },
+                "darwin-x86_64-app":     { signature: $sig_dx86,  url: $url_dx86  },
+                "linux-x86_64":          { signature: $sig_lappi, url: $url_lappi },
+                "linux-x86_64-appimage": { signature: $sig_lappi, url: $url_lappi },
+                "linux-x86_64-deb":      { signature: $sig_ldeb,  url: $url_ldeb  },
+                "windows-x86_64":        { signature: $sig_wnsis, url: $url_wnsis },
+                "windows-x86_64-nsis":   { signature: $sig_wnsis, url: $url_wnsis }
+              }
+            }' > /tmp/latest.json
+
+          python3 -m json.tool /tmp/latest.json > /dev/null
+          gh release upload "$TAG" /tmp/latest.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
