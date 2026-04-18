@@ -4,7 +4,15 @@ Conventional-commits–driven notes. Dates are UTC.
 
 ## Unreleased
 
-(Nothing yet — changes after v0.1.2 land here.)
+(Nothing yet — changes after v0.1.3 land here.)
+
+## v0.1.3 — 2026-04-18
+
+UX recovery hint for the in-app updater's "installing" state. After 5
+seconds in the installing state with no auto-restart, the banner now
+shows: "Installing… If this doesn't restart in a moment, quit (⌘Q)
+and reopen to finish." Gives users on broken or hung installs a
+visible escape hatch instead of an indefinitely spinning banner.
 
 ## v0.1.2 — 2026-04-18
 
@@ -29,6 +37,14 @@ Caveat the rc.1 cycle exposed: pre-existing v0.1.0 instances cannot
 self-update to this release because v0.1.0 predates the updater
 feature. v0.1.0 users need to install v0.1.1 manually once; from
 v0.1.1 onward, future updates flow through the in-app updater.
+
+**Known issue (fixed in v0.1.2):** the in-app updater downloads and
+installs new versions correctly on macOS but does not auto-restart —
+users see "Installing — ccsettings will restart…" indefinitely. Quit
+(⌘Q) and reopen manually to land on the new version. v0.1.2 ships an
+explicit `relaunch()` call that fixes this. (For installs in
+`/Applications`, also look for a hidden macOS admin password prompt
+behind the app window before quitting.)
 
 ## v0.1.1-rc.1 — 2026-04-18
 

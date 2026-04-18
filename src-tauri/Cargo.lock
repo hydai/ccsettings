@@ -422,7 +422,7 @@ dependencies = [
 
 [[package]]
 name = "ccsettings"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "anyhow",
  "dirs",
