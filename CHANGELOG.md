@@ -4,7 +4,35 @@ Conventional-commits–driven notes. Dates are UTC.
 
 ## Unreleased
 
-(Nothing yet — changes after v0.1.5 land here.)
+(Nothing yet — changes after v0.1.6 land here.)
+
+## v0.1.6 — 2026-04-18
+
+Release-pipeline hotfix for the auto-updater. v0.1.5 shipped a
+`latest.json` missing all four macOS platform entries because the
+release matrix had four parallel jobs each independently
+read-modify-writing the manifest via tauri-action's default
+`includeUpdaterJson=true`; the last writer won the race and silently
+discarded other platforms' contributions. The v0.1.5 manifest was
+repaired in place on its GitHub release; this release ships the
+workflow change that prevents recurrence.
+
+- **Single-writer `publish-manifest` job**: tauri-action's matrix
+  jobs now run with `includeUpdaterJson: false`. A dedicated
+  `publish-manifest` job runs after the matrix (`needs: build`),
+  downloads every `.sig` on the draft release, classifies them by
+  bundle-name glob, and assembles `latest.json` with `jq`.
+  Deterministic, race-free.
+- **Nine-key manifest**: the new `publish-manifest` emits both the
+  primary and suffixed key variants per platform — `darwin-aarch64`
+  alongside `darwin-aarch64-app`, `linux-x86_64` alongside
+  `linux-x86_64-appimage`, etc. Matches tauri-action's canonical
+  shape so newer tauri-updater clients (which check the suffixed
+  form first and fall back to the primary) work correctly.
+
+No app code change in this release — v0.1.6's binary is functionally
+identical to v0.1.5. The version bump exists to exercise the fixed
+workflow end-to-end.
 
 ## v0.1.5 — 2026-04-18
 
