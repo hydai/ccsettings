@@ -36,6 +36,7 @@ pub fn run() {
             commands::save_memory_file,
             commands::get_plugins_state,
             commands::get_mcp_state,
+            commands::get_platform_info,
             commands::list_backups_for_layer,
             commands::list_backups_for_memory,
             commands::restore_backup,

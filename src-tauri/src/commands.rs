@@ -677,6 +677,24 @@ fn load_workspace_layers(project_root: &std::path::Path) -> Result<Vec<Layer>, S
         .collect()
 }
 
+/// OS / arch / Tauri runtime info for the About pane. All three values are
+/// compile-time constants so the call has no I/O cost.
+#[derive(Serialize)]
+pub struct PlatformInfo {
+    pub os: String,
+    pub arch: String,
+    pub tauri_version: String,
+}
+
+#[tauri::command]
+pub fn get_platform_info() -> PlatformInfo {
+    PlatformInfo {
+        os: std::env::consts::OS.to_string(),
+        arch: std::env::consts::ARCH.to_string(),
+        tauri_version: tauri::VERSION.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
