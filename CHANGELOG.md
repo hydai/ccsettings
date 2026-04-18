@@ -4,7 +4,18 @@ Conventional-commits–driven notes. Dates are UTC.
 
 ## Unreleased
 
-(Nothing yet — changes after v0.1.1-rc.1 land here.)
+(Nothing yet — changes after v0.1.1 land here.)
+
+## v0.1.1 — 2026-04-18
+
+First stable release with the in-app auto-updater. Functionally
+identical to v0.1.1-rc.1 after the pipeline-validation cut — see that
+section below for the feature inventory.
+
+Caveat the rc.1 cycle exposed: pre-existing v0.1.0 instances cannot
+self-update to this release because v0.1.0 predates the updater
+feature. v0.1.0 users need to install v0.1.1 manually once; from
+v0.1.1 onward, future updates flow through the in-app updater.
 
 ## v0.1.1-rc.1 — 2026-04-18
 
