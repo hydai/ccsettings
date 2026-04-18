@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import type { DiscoveredProject, Workspace } from "../types";
+import { useUi } from "./ui";
 
 type WorkspacesState = {
   workspaces: Workspace[];
@@ -67,6 +68,10 @@ export const useWorkspaces = create<WorkspacesState>((set, get) => ({
 
   select(id) {
     set({ selectedId: id });
+    // Selecting a workspace exits the About pane back to workspace view —
+    // clicking a workspace should always navigate into its settings, not
+    // change selection silently while staying on a global page.
+    useUi.setState({ view: "workspace" });
   },
 
   async discover() {
