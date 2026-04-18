@@ -1,7 +1,8 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import { Plus, Search } from "lucide-react";
+import { Info, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/cn";
+import { useUi } from "../state/ui";
 import { useUpdater } from "../state/updater";
 import { useWorkspaces } from "../state/workspaces";
 import { DiscoverPanel } from "./DiscoverPanel";
@@ -121,6 +122,15 @@ export function Sidebar() {
         </Button>
         <ThemeToggle />
         <UpdatePill />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => useUi.setState({ view: "about" })}
+          className="w-full justify-start"
+        >
+          <Info className="w-4 h-4" />
+          About
+        </Button>
       </div>
     </aside>
   );
